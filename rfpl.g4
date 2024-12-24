@@ -3,38 +3,35 @@ grammar rfpl;
 // Parser rules (start with lowercase)
 line          : define
               | examine ;
-define        : symbol '=' fexpr 
-              | symbol '[' symbol symbollist ']' '=' fexpr ;
+define        : Symbol '=' fexpr ;
 examine       : nexpr ;
-symbollist    : /* epsilon */ 
-              | ',' symbol symbollist ;
+symbollist    : Symbol (',' Symbol)* ;
 fexpr         : fexprleaf
               | builtinCn
               | builtinPr
-              | builtinMn ;
-fexprleaf     : symbol 
-              | symbol '[' fexpr fexprlist ']' ;
-builtinCn     : 'Cn' '[' fexpr fexprlist ']' ;
+              | builtinMn
+              | identity
+              | constant
+              | bracket ;
+fexprleaf     : Symbol
+              | Symbol '[' fexprlist ']' ;
+fexprlist     : fexpr (',' fexpr)* ;
+builtinCn     : 'Cn' '[' fexprlist ']' ;
 builtinPr     : 'Pr' '[' fexpr ',' fexpr ']' ;
 builtinMn     : 'Mn' '[' fexpr ']' ;
-fexprlist     : /* epsilon */ 
-              | ',' fexpr fexprlist ;
+identity      : '!' natural ;
+constant      : '#' natural ;
+bracket       : '@' natural ;
 nexpr         : fexpr '(' nexprlist ')' 
               | natural ;
 nexprlist     : /* epsilon */ 
-              | nexpr nexprlist2 ;
-nexprlist2    : /* epsilon */ 
-              | ',' nexpr nexprlist2 ;
-natural       : number 
-              | '[' naturallist ']' ;
+              | nexpr (',' nexpr)* ;
+natural       : Number 
+              | '<' naturallist '>' ;
 naturallist   : /* epsilon */ 
-              | natural naturallist2 ;
-naturallist2  : /* epsilon */ 
-              | ',' natural naturallist2 ;
+              | natural (',' natural)* ;
 
 // Lexer rules (start with uppercase)
-number        : DIGIT* ;
-symbol        : Symbol ;
-Symbol        : [a-zA-Z_][a-zA-Z0-9_]* ;
-DIGIT         : [0-9] ;
+Number        : [0-9]+ ;
+Symbol        : [-a-zA-Z_][-a-zA-Z0-9_]* ;
 WS            : [ \t\r\n]+ -> skip ;  // Skip whitespace
