@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import Callable
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
-from copy import deepcopy
 
 
 primes = [2, 3, 5, 7]
@@ -98,6 +97,7 @@ class Natural:
         for ent in self.natural:
             subreps.append(ent.__str__())
         return '<{}>'.format(', '.join(subreps))
+
     
 @dataclass
 class FuncType:

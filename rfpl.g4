@@ -1,8 +1,8 @@
 grammar rfpl;
 
 // Parser rules (start with lowercase)
-line          : define
-              | examine ;
+line          : define EOF
+              | examine EOF ;
 define        : Symbol '=' fexpr ;
 examine       : nexpr ;
 symbollist    : Symbol (',' Symbol)* ;
