@@ -45,7 +45,7 @@ def load(intr, filename:str):
     if filename == 'basics':
         intr.func_table['add'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[0].toInt() + x[1].toInt()))
         intr.func_table['mul'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[0].toInt() * x[1].toInt()))
-        intr.func_table['pow'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[1].toInt ** x[0].toInt()))
+        intr.func_table['pow'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[1].toInt() ** x[0].toInt()))
         print('\033[32mbaseic functions added: add, mul, pow\033[0m\n')
     else:
         filename += '.rfpl'
