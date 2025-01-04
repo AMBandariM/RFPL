@@ -5,3 +5,6 @@
 *Parser.py
 *Visitor.py
 *.tokens
+test.*
+__pycache__/*
+venv/*
