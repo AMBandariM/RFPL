@@ -1,0 +1,8 @@
+load-basics()
+
+prime = Cn[Int, Cn[Set, !0, #1, #<>]]
+
+get0 = Cn[Get, #0, !0]
+get1 = Cn[Get, #1, !0]
+nextfib = Cn[Set, #1, Cn[Add, get0, get1], Cn[Set, #0, get1, #<>]]
+fib = Pr[#<0, 1>, nextfib]

@@ -1,3 +1,5 @@
+import sys
+import traceback
 from antlr4 import *
 from dataclasses import dataclass
 from typing import Callable
@@ -7,112 +9,13 @@ from typing import Union, List
 
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
+from .natural import Natural
 
 DEBUG = False
 def debug(*args):
     if not DEBUG:
         return
-    for arg in args:
-        print(arg, end=' ')
-    print()
-
-primes = [2, 3, 5, 7]
-
-def getPrime(i):
-    if i < len(primes):
-        return primes[i]
-    cur = primes[-1] + 1
-    while len(primes) <= i:
-        isprime = True
-        for div in primes:
-            if div * div > cur:
-                break
-            if cur % div == 0:
-                isprime = False
-                break
-        if isprime:
-            primes.append(cur)
-        cur += 1
-    return primes[i]
-
-class Natural:
-    def __init__(self, natural: Union[int, List['Natural']]):
-        self.natural: Union[int, List['Natural']] = natural
-    
-    def toInt(self):
-        if isinstance(self.natural, int):
-            return self.natural
-        num = 1
-        for i, ent in enumerate(self.natural):
-            num *= getPrime(i) ** ent.toInt()
-        return num
-    
-    def simplify(self):
-        self.natural = self.toInt()
-
-    def factor(self):
-        if isinstance(self.natural, List['Natural']):
-            return
-        elif isinstance(self.natural, int):
-            cur = self.natural
-            self.natural = []
-            pi = 0
-            while cur > 0:
-                cnt = 0
-                while cur % getPrime(pi) == 0:
-                    cur //= getPrime(pi)
-                    cnt += 1
-                self.natural.append(Natural(cnt))
-                pi += 1
-    
-    def copy(self):
-        if isinstance(self.natural, int):
-            natural = self.natural
-        elif isinstance(self.natural, List['Natural']):
-            natural = []
-            for nat in self.natural:
-                natural.append(nat.copy())
-        return Natural(natural)
-
-    def getEnt(self, ind: 'Natural'):
-        ind = ind.toInt()
-        self.factor()
-        if ind >= len(self.natural):
-            return Natural(0)
-        return self.natural[ind]
-        
-    def setEnt(self, ind: 'Natural', nat: 'Natural'):
-        ind = ind.toInt()
-        self.factor()
-        while len(self.natural) <= ind:
-            self.natural.append(Natural(0))
-        self.natural[ind] = nat.copy()
-    
-    @staticmethod
-    def interpret(tree: RFPLParser.NaturalContext):
-        if tree.Number() is not None:
-            return Natural(int(tree.Number().getText()))
-        naturallist = tree.naturallist()
-        nats = []
-        for subtr in naturallist.getTypedRuleContexts(RFPLParser.NaturalContext):
-            nats.append(Natural.interpret(subtr))
-        return Natural(nats)
-    
-    def __repr__(self):
-        if isinstance(self.natural, int):
-            return 'N({})'.format(self.natural)
-        subreps = []
-        for ent in self.natural:
-            subreps.append(ent.__repr__())
-        return 'N<{}>'.format(', '.join(subreps))
-    
-    def __str__(self):
-        if isinstance(self.natural, int):
-            return '{}'.format(self.natural)
-        subreps = []
-        for ent in self.natural:
-            subreps.append(ent.__str__())
-        return '<{}>'.format(', '.join(subreps))
+    print(*args, file=sys.stderr)
 
 
 @dataclass
@@ -155,9 +58,52 @@ class Interpreter:
         self.symbol_table = SymbolTable()
         self.symbol_table.add(
             symbol='S', 
-            call=lambda _index, _blist, x : Natural(x[0].toInt() + 1), 
+            call=lambda _index, _blist, args : args[0].succ(), 
             builtin=True
         )
+        self.symbol_table.add(
+            symbol='load-basics',
+            call=lambda _index, _blist, _args : self.load_basics(),
+            builtin=True
+        )
+
+    def load_basics(self):
+        self.symbol_table.add(
+            symbol='Add',
+            call=lambda _index, _blist, args : args[0].add(args[1]),
+            builtin=True
+        )
+        self.symbol_table.add(
+            symbol='Mul',
+            call=lambda _index, _blist, args : args[0].multiply(args[1]),
+            builtin=True
+        )
+        self.symbol_table.add(
+            symbol='Pow',
+            call=lambda _index, _blist, args : args[1].power(args[0]),
+            builtin=True
+        )
+        self.symbol_table.add(
+            symbol='Get',
+            call=lambda _index, _blist, args : args[1].getEntry(args[0]),
+            builtin=True
+        )
+        self.symbol_table.add(
+            symbol='Set',
+            call=lambda _index, _blist, args : args[2].setEntry(args[0], args[1]),
+            builtin=True
+        )
+        self.symbol_table.add(
+            symbol='Int',
+            call=lambda _index, _blist, args : args[0].simplify() or args[0],
+            builtin=True
+        )
+        self.symbol_table.add(
+            symbol='List',
+            call=lambda _index, _blist, args : args[0].factor() or args[0],
+            builtin=True
+        )
+        return Natural(0)
 
     def interpretFexpr(self, symbol_index: int, tree, blist: BaseList, args: List[Natural]) -> Natural:
         if not isinstance(tree, RFPLParser.FexprContext):
@@ -215,7 +161,7 @@ class Interpreter:
         elif isinstance(tree, RFPLParser.BuiltinMnContext):
             f = tree.fexpr(0)
             args = [Natural(0)] + args
-            while self.interpretFexpr(symbol_index, f, blist, args) > 0:
+            while not self.interpretFexpr(symbol_index, f, blist, args).isZero():
                 args[0].natural += 1
             return args[0]
         else:
@@ -259,10 +205,12 @@ class Interpreter:
             if isinstance(tree, RFPLParser.DefineContext):
                 symb = tree.Symbol().getText()
                 fexpr = tree.fexpr()
-                message = 'New Function Added'
-                _, symind = self.symbol_table.search(symb)
+                message = f'Function {symb} added'
+                syment, symind = self.symbol_table.search(symb)
                 if symind is not None:
-                    message = f'Function {symb} Redefined'
+                    if syment.builtin:
+                        raise Exception('cannot redefine builtin function {}'.format(symb))
+                    message = f'Function {symb} redefined'
                 self.symbol_table.add(
                     symbol=symb,
                     call=lambda index, blist, args, fexpr=fexpr: self.interpretFexpr(index, fexpr, blist, args)
@@ -274,4 +222,4 @@ class Interpreter:
             else:
                 raise Exception('unknown node {}'.format(type(tree)))  # I leave this one !
         except Exception as e:
-            return f'ERROR: {e}', None
+            return f'ERROR: {traceback.format_exc()}', None

@@ -44,36 +44,31 @@ def multiline_input():
             lines.append(line[:-1])
     return ' '.join(lines)
 
-def load(intr, filename:str):
-    if filename == 'basics':
-        # TODO: change this to the new symbol table; also add them as operators to Natural
-        # intr.func_table['add'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[0].toInt() + x[1].toInt()))
-        # intr.func_table['mul'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[0].toInt() * x[1].toInt()))
-        # intr.func_table['pow'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[1].toInt() ** x[0].toInt()))
-        print('\033[32mbaseic functions added: add, mul, pow\033[0m\n')
-    else:
-        filename += '.rfpl'
-        try:
-            with open(filename, 'r') as f:
-                lines = f.read().split('\n')
-                cmd = ''
-                for line in lines:
-                    if line == '':
-                        cmd = cmd.strip()
-                        if cmd:
-                            suc, res = intr.interpret(cmd)
-                            if suc != 'Success':
-                                print(f'\033[31m{suc}\033[0m')
-                            elif isinstance(res, Natural):
-                                print(f'\033[33m = {res}\033[0m')
-                            else:
-                                print(f'\033[33m . {res}\033[0m')
-                        cmd = ''
+def load(intr: Interpreter, filename: str):
+    filename += '.rfpl'
+    try:
+        with open(filename, 'r') as f:
+            lines = f.readlines()
+            cmd = ''
+            for line in lines:
+                line = line.strip()
+                if line and line[-1] == '\\':
+                    cmd += line[:-1] + ' '
+                    continue
+                cmd += line
+                cmd = cmd.strip()
+                if cmd:
+                    suc, res = intr.interpret(cmd)
+                    if suc != 'Success':
+                        print(f'\033[31m{suc}\033[0m')
+                    elif isinstance(res, Natural):
+                        print(f'\033[33m = {res}\033[0m')
                     else:
-                        cmd += line + ' '
-                print()
-        except Exception as e:
-            print(f'\033[31mcoulden\'nt open {filename}\033[0m\n')
+                        print(f'\033[33m . {res}\033[0m')
+                cmd = ''
+            print()
+    except Exception as e:
+        print(f'\033[31mcouldn\'nt open {filename}\033[0m\n')
 
 hist = ''
 def save(filename:str):
@@ -106,7 +101,7 @@ if __name__ == '__main__':
                     print(fun, end=' ')
             print('\033[0m\n')
             continue
-        mtch = re.match(r'load (?P<FILE>\w+)', line)
+        mtch = re.match(r'load (?P<FILE>[^\s]+)', line)
         if mtch:
             load(intr, mtch.group('FILE'))
             continue
