@@ -27,24 +27,29 @@ class CustomLexer(Lexer):
         return get_line
 
 session = PromptSession(lexer=CustomLexer(), style=custom_style)
+
+
 def multiline_input():
     lines = []
-
     fst = True
     with patch_stdout():
         while True:
-            line = session.prompt('>> ' if fst else '   ')
+            line = session.prompt('>> ' if fst else '   ').strip()
             fst = False
-            if not line.strip():
+            if not line:
                 break
-            lines.append(line)
+            if line[-1] != '\\':
+                lines.append(line)
+                break
+            lines.append(line[:-1])
     return ' '.join(lines)
 
 def load(intr, filename:str):
     if filename == 'basics':
-        intr.func_table['add'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[0].toInt() + x[1].toInt()))
-        intr.func_table['mul'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[0].toInt() * x[1].toInt()))
-        intr.func_table['pow'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[1].toInt() ** x[0].toInt()))
+        # TODO: change this to the new symbol table; also add them as operators to Natural
+        # intr.func_table['add'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[0].toInt() + x[1].toInt()))
+        # intr.func_table['mul'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[0].toInt() * x[1].toInt()))
+        # intr.func_table['pow'] = Interpreter.FuncType(call=lambda _stack, x : Natural(x[1].toInt() ** x[0].toInt()))
         print('\033[32mbaseic functions added: add, mul, pow\033[0m\n')
     else:
         filename += '.rfpl'
@@ -88,7 +93,7 @@ if __name__ == '__main__':
     while True:
         try:
             line = multiline_input()
-        except EOFError:
+        except (EOFError, KeyboardInterrupt):
             break
         if not line.strip():
             continue
