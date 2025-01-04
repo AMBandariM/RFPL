@@ -1,4 +1,4 @@
-grammar rfpl;
+grammar RFPL;
 
 // Parser rules (start with lowercase)
 line          : define EOF

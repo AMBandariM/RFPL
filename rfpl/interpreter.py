@@ -1,11 +1,12 @@
 from antlr4 import *
-from rfplLexer import rfplLexer
-from rfplParser import rfplParser
 from dataclasses import dataclass
 from typing import Callable
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
 from typing import Union, List
+
+from .RFPLLexer import RFPLLexer
+from .RFPLParser import RFPLParser
 
 DEBUG = False
 def debug(*args):
@@ -88,12 +89,12 @@ class Natural:
         self.natural[ind] = nat.copy()
     
     @staticmethod
-    def interpret(tree: rfplParser.NaturalContext):
+    def interpret(tree: RFPLParser.NaturalContext):
         if tree.Number() is not None:
             return Natural(int(tree.Number().getText()))
         naturallist = tree.naturallist()
         nats = []
-        for subtr in naturallist.getTypedRuleContexts(rfplParser.NaturalContext):
+        for subtr in naturallist.getTypedRuleContexts(RFPLParser.NaturalContext):
             nats.append(Natural.interpret(subtr))
         return Natural(nats)
     
@@ -125,21 +126,21 @@ class Interpreter:
         }
 
     def interpretFexpr(self, tree, stack, args):
-        if not isinstance(tree, rfplParser.FexprContext):
+        if not isinstance(tree, RFPLParser.FexprContext):
             raise Exception('tree must represent a fexpr, got {}'.format(type(tree)))
         tree = tree.getChild(0)
         debug('call', tree.getText(), args)
-        if isinstance(tree, rfplParser.FexprleafContext):
+        if isinstance(tree, RFPLParser.FexprleafContext):
             baseNxt = []
             if tree.fexprlist() is not None:
-                fexprlist: rfplParser.FexprlistContext = tree.fexprlist()
-                baseNxt += fexprlist.getTypedRuleContexts(rfplParser.FexprContext)
+                fexprlist: RFPLParser.FexprlistContext = tree.fexprlist()
+                baseNxt += fexprlist.getTypedRuleContexts(RFPLParser.FexprContext)
             symb = tree.Symbol().getText()
             if symb not in self.func_table:
                 raise Exception('function {} not defined'.format(symb))
             debug('subcall to', symb)
             return self.func_table[symb].call(stack + [baseNxt], args)
-        elif isinstance(tree, rfplParser.BracketContext):
+        elif isinstance(tree, RFPLParser.BracketContext):
             if len(stack) == 0:
                 raise Exception('root function have no base argument')
             baseArgs = stack[-1]
@@ -147,22 +148,22 @@ class Interpreter:
             if ind >= len(baseArgs):
                 raise Exception('not enough base arguments')
             return self.interpretFexpr(baseArgs[ind], stack[:-1], args)
-        elif isinstance(tree, rfplParser.IdentityContext):
+        elif isinstance(tree, RFPLParser.IdentityContext):
             ind = Natural.interpret(tree.natural()).toInt()
             debug(ind, args)
             if ind >= len(args):
                 raise Exception('not enough arguments')
             return args[ind]
-        elif isinstance(tree, rfplParser.ConstantContext):
+        elif isinstance(tree, RFPLParser.ConstantContext):
             return Natural.interpret(tree.natural())
-        elif isinstance(tree, rfplParser.BuiltinCnContext):
-            f, *gs = tree.fexprlist().getTypedRuleContexts(rfplParser.FexprContext)
+        elif isinstance(tree, RFPLParser.BuiltinCnContext):
+            f, *gs = tree.fexprlist().getTypedRuleContexts(RFPLParser.FexprContext)
             fargs = []
             for g in gs:
                 gres = self.interpretFexpr(g, stack, args)
                 fargs.append(gres)
             return self.interpretFexpr(f, stack, fargs)
-        elif isinstance(tree, rfplParser.BuiltinPrContext):
+        elif isinstance(tree, RFPLParser.BuiltinPrContext):
             if len(args) == 0:
                 raise Exception('not enough arguments for Pr')
             f = tree.fexpr(0)
@@ -172,7 +173,7 @@ class Interpreter:
             for i in range(n):
                 cur = self.interpretFexpr(g, stack, [cur, Natural(i)] + args[1:])
             return cur
-        elif isinstance(tree, rfplParser.BuiltinMnContext):
+        elif isinstance(tree, RFPLParser.BuiltinMnContext):
             f = tree.fexpr(0)
             args = [Natural(0)] + args
             while self.interpretFexpr(f, stack, args) > 0:
@@ -182,14 +183,14 @@ class Interpreter:
             raise Exception('unknown node {}'.format(type(tree)))
 
     def interpretNexpr(self, tree):
-        if not isinstance(tree, rfplParser.NexprContext):
+        if not isinstance(tree, RFPLParser.NexprContext):
             raise Exception('tree must represent a fexpr, got {}'.format(type(tree)))
         if tree.natural() is not None:
             return Natural.interpret(tree.natural())
-        fexpr: rfplParser.FexprContext = tree.fexpr()
-        nexprlist: rfplParser.NexprlistContext = tree.nexprlist()
+        fexpr: RFPLParser.FexprContext = tree.fexpr()
+        nexprlist: RFPLParser.NexprlistContext = tree.nexprlist()
         args = []
-        for nexpr in nexprlist.getTypedRuleContexts(rfplParser.NexprContext):
+        for nexpr in nexprlist.getTypedRuleContexts(RFPLParser.NexprContext):
             args.append(self.interpretNexpr(nexpr))
         return self.interpretFexpr(fexpr, [], args)
 
@@ -203,20 +204,20 @@ class Interpreter:
     def interpret(self, line:str):
         try:
             input_stream = InputStream(line.strip())
-            lexer = rfplLexer(input_stream)
+            lexer = RFPLLexer(input_stream)
             lexer.removeErrorListeners()
             lexer.addErrorListener(self.ThrowingErrorListener())
 
             token_stream = CommonTokenStream(lexer)
 
-            parser = rfplParser(token_stream)
+            parser = RFPLParser(token_stream)
             parser.removeErrorListeners()
             parser.addErrorListener(self.ThrowingErrorListener())
 
             tree = parser.line()
 
             tree = tree.getChild(0)
-            if isinstance(tree, rfplParser.DefineContext):
+            if isinstance(tree, RFPLParser.DefineContext):
                 symb = tree.Symbol().getText()
                 fexpr = tree.fexpr()
                 message = 'New Function Added'
@@ -224,7 +225,7 @@ class Interpreter:
                     message = f'Function {symb} Redefined'
                 self.func_table[symb] = self.FuncType(lambda stack, args, fexpr=fexpr: self.interpretFexpr(fexpr, stack, args))
                 return 'Success', message
-            elif isinstance(tree, rfplParser.ExamineContext):
+            elif isinstance(tree, RFPLParser.ExamineContext):
                 result = self.interpretNexpr(tree.nexpr())
                 return 'Success', result
             else:

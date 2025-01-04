@@ -1,10 +1,13 @@
-run: main.py rfplParser.py rfplLexer.py rfplVisitor.py
-	python main.py
+ANTLRFILES=rfpl/RFPLParser.py rfpl/RFPLLexer.py
+PYFILES=$(wildcard rfpl/*.py)
+
+run: ${PYFILES} ${ANTLRFILES}
+	python -m rfpl
 .PHONY: run
 
-rfplParser.py rfplLexer.py rfplVisitor.py: rfpl.g4
-	antlr4 -Dlanguage=Python3 rfpl.g4 -no-listener -visitor
+${ANTLRFILES}: RFPL.g4
+	antlr4 -Dlanguage=Python3 -no-listener -no-visitor RFPL.g4 -o rfpl
 
 clear:
-	rm -f rfplParser.py rfplLexer.py *.inerp *.tokens
+	rm -f ${ANTLRFILES} rfpl/*.interp  rfpl/*.tokens
 .PHONY: clear

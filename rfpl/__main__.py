@@ -4,7 +4,7 @@ from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.styles import Style
 import re
-from interpreter import Interpreter, Natural
+from .interpreter import Interpreter, Natural
 import os
 
 custom_style = Style.from_dict({
@@ -86,7 +86,12 @@ def test(fun1, fun2):
 if __name__ == '__main__':
     intr = Interpreter()
     while True:
-        line = multiline_input()
+        try:
+            line = multiline_input()
+        except EOFError:
+            break
+        if not line.strip():
+            continue
         if re.match(r'exit|finish|end', line):
             break
         if re.match(r'list', line):
