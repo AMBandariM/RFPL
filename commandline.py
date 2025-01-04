@@ -26,9 +26,8 @@ class CustomLexer(Lexer):
             return tokens
         return get_line
 
-
+session = PromptSession(lexer=CustomLexer(), style=custom_style)
 def multiline_input():
-    session = PromptSession(lexer=CustomLexer(), style=custom_style)
     lines = []
 
     fst = True
