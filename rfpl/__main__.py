@@ -83,7 +83,7 @@ def load(intr: Interpreter, filename: str, loaded=[]):
     if filename == 'basics':
         intr.load_basics()
         print('\033[32m', end='')
-        for func in ['Add', 'Mul', 'Pow', 'Get', 'Set', 'Int', 'List']:
+        for func in ['Add', 'Sub', 'Mul', 'Pow', 'Get', 'Set', 'Int', 'List', 'Mod']:
             print(f' . Function {func} added')
         print('\033[0m', end=''if loaded else '\n')
         return
@@ -143,11 +143,14 @@ if __name__ == '__main__':
         if re.match(r'^\s*(exit|finish|end)\s*$', line):
             break
         if re.match(r'list', line):
-            print('\033[33m.. ', end='')
-            for fun in intr.symbol_table.table:
-                if fun.symbol != 'S':
-                    print(fun.symbol, end=' ')
-            print('\033[0m\n')
+            print('\033[33m..', end='')
+            out = []
+            outstr = ''
+            for fun in intr.symbol_table.table[::-1]:
+                if fun.symbol != 'S' and fun.symbol not in out:
+                    outstr = ' ' + fun.symbol + (f'[{fun.basesz}]' if fun.basesz else '') + outstr
+                    out.append(fun.symbol)
+            print(f'{outstr}\033[0m\n')
             continue
         mtch = re.match(r'^\s*load\s+(?P<FILE>[\w/\-]+)\s*$', line)
         if mtch:
