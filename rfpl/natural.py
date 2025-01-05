@@ -39,7 +39,7 @@ class Natural:
         if isinstance(self.natural, list):
             return
         if self.natural == 0:
-            raise Exception('cannot factor zero')
+            return
         cur = self.natural
         self.natural = []
         pi = 0
@@ -61,6 +61,8 @@ class Natural:
         return Natural(natural)
 
     def getEntry(self, ind: 'Natural'):
+        if self.natural == 0:
+            return Natural(0)
         ind = ind.toInt()
         self.factor()
         if ind >= len(self.natural):
@@ -68,6 +70,8 @@ class Natural:
         return self.natural[ind]
         
     def setEntry(self, ind: 'Natural', nat: 'Natural'):
+        if self.natural == 0:
+            return Natural(0)
         result = self.copy()
         ind = ind.toInt()
         result.factor()
@@ -120,6 +124,8 @@ class Natural:
         return Natural(list(x.add(y) for x, y in zip(a, b)))
     
     def power(self, other: 'Natural'):
+        if self.isZero():
+            return Natural(0)
         if other.isZero():
             return Natural(1)
         if other.isOne():

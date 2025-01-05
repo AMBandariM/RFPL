@@ -6,6 +6,7 @@ from typing import Callable
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
 from typing import Union, List
+import hashlib
 
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
@@ -23,6 +24,7 @@ class SymbolEntry:
     symbol: str
     call: Callable
     builtin: bool = False
+    ix: int = -1
 
 
 class SymbolTable:
@@ -38,6 +40,7 @@ class SymbolTable:
         return self.table[index]
     
     def addEntry(self, entry: SymbolEntry):
+        entry.ix = len(self.table)
         self.table.append(entry)
     
     def add(self, *args, **kwargs):
@@ -50,6 +53,46 @@ class BaseList:
     prev: 'BaseList' = None
 
 
+class HashCache:
+    def __init__(self, basic_functions):
+        self.basic_functions = basic_functions
+        self.cache = {}
+        self.possibleMatches = {}
+        self.counter = {}
+        self.counter_max = 10
+
+    def hash(self, args: List[Natural]):
+        lst = ''
+        for arg in args:
+            lst += str(arg.toInt()) + '-'
+        return hashlib.md5(lst.encode()).hexdigest()
+
+    def callAndCache(self, fun: SymbolEntry, blist: BaseList, args: List[Natural]):
+        if len(blist.args):
+            return fun.call(blist, args)
+        if fun.ix not in self.possibleMatches:
+            self.possibleMatches[fun.ix] = self.basic_functions.copy()
+            self.counter[fun.ix] = 0
+            self.cache[fun.ix] = {}
+        if self.counter[fun.ix] == self.counter_max:
+            return self.possibleMatches[fun.ix][0].call(blist, args)
+        hsh = self.hash(args)
+        if hsh in self.cache[fun.ix].keys():
+            return self.cache[fun.ix][hsh]
+        res = fun.call(blist, args)
+        intres = res.toInt()
+        for ent in self.possibleMatches[fun.ix]:
+            rel = ent.call(blist, args)
+            if rel.toInt() != intres:
+                self.possibleMatches[fun.ix].remove(ent)
+        if len(self.possibleMatches[fun.ix]) == 1:
+            self.counter[fun.ix] += 1
+            if self.counter[fun.ix] == self.counter_max:
+                print(f'replacing {fun.symbol} with {self.possibleMatches[fun.ix][0].symbol} ...')
+        self.cache[fun.ix][hsh] = res
+        return res
+
+
 class Interpreter:
     def __init__(self):
         self.symbol_table = SymbolTable()
@@ -58,44 +101,48 @@ class Interpreter:
             call=lambda _blist, args : args[0].succ(), 
             builtin=True
         )
+        self.basic_enteries = [
+            SymbolEntry(
+                symbol='Add',
+                call=lambda _blist, args : (args[0] if len(args) else Natural(0)).add(args[1] if len(args) > 1 else Natural(0)),
+                builtin=True
+            ),
+            SymbolEntry(
+                symbol='Mul',
+                call=lambda _blist, args : (args[0] if len(args) else Natural(0)).multiply(args[1] if len(args) > 1 else Natural(0)),
+                builtin=True
+            ),
+            SymbolEntry(
+                symbol='Pow',
+                call=lambda _blist, args : (args[1] if len(args) > 1 else Natural(0)).power(args[0] if len(args) else Natural(0)),
+                builtin=True
+            ),
+            SymbolEntry(
+                symbol='Get',
+                call=lambda _blist, args : (args[1] if len(args) > 1 else Natural(0)).getEntry(args[0] if len(args) else Natural(0)),
+                builtin=True
+            ),
+            SymbolEntry(
+                symbol='Set',
+                call=lambda _blist, args : (args[2] if len(args) > 2 else Natural(0)).setEntry(args[0] if len(args) else Natural(0), args[1] if len(args) > 1 else Natural(0)),
+                builtin=True
+            ),
+            SymbolEntry(
+                symbol='Int',
+                call=lambda _blist, args : (args[0] if len(args) else Natural(0)).simplify() or (args[0] if len(args) else Natural(0)),
+                builtin=True
+            ),
+            SymbolEntry(
+                symbol='List',
+                call=lambda _blist, args : (args[0] if len(args) else Natural(0)).factor() or (args[0] if len(args) else Natural(0)),
+                builtin=True
+            ),
+        ]
+        self.cache = HashCache(self.basic_enteries)
 
     def load_basics(self):
-        self.symbol_table.add(
-            symbol='Add',
-            call=lambda _blist, args : args[0].add(args[1]),
-            builtin=True
-        )
-        self.symbol_table.add(
-            symbol='Mul',
-            call=lambda _blist, args : args[0].multiply(args[1]),
-            builtin=True
-        )
-        self.symbol_table.add(
-            symbol='Pow',
-            call=lambda _blist, args : args[1].power(args[0]),
-            builtin=True
-        )
-        self.symbol_table.add(
-            symbol='Get',
-            call=lambda _blist, args : args[1].getEntry(args[0]),
-            builtin=True
-        )
-        self.symbol_table.add(
-            symbol='Set',
-            call=lambda _blist, args : args[2].setEntry(args[0], args[1]),
-            builtin=True
-        )
-        self.symbol_table.add(
-            symbol='Int',
-            call=lambda _blist, args : args[0].simplify() or args[0],
-            builtin=True
-        )
-        self.symbol_table.add(
-            symbol='List',
-            call=lambda _blist, args : args[0].factor() or args[0],
-            builtin=True
-        )
-        return Natural(0)
+        for ent in self.basic_enteries:
+            self.symbol_table.addEntry(ent)
 
     def interpretFexpr(self, tree, blist: BaseList, args: List[Natural]) -> Natural:
         if not isinstance(tree, RFPLParser.FexprContext):
@@ -110,7 +157,7 @@ class Interpreter:
             syment = tree.children[-1]
             if syment is None:
                 raise Exception('function {} not defined'.format(symb))
-            return syment.call(BaseList(base_nxt, blist), args)
+            return self.cache.callAndCache(syment, BaseList(base_nxt, blist), args)
         elif isinstance(tree, RFPLParser.BracketContext):
             if blist is None:
                 raise Exception('root function have no base argument')
@@ -248,4 +295,4 @@ class Interpreter:
             else:
                 raise Exception('unknown node {}'.format(type(tree)))  # I leave this one !
         except Exception as e:
-            return f'ERROR: {e}', None
+            return f'ERROR: {e.traceback()}', None
