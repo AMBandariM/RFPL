@@ -29,8 +29,10 @@ class SymbolTable:
     def __init__(self):
         self.table: List[SymbolEntry] = []
     
-    def search(self, symbol: str):
-        index = len(self.table) - 1
+    def search(self, symbol: str, index: int = -1):
+        if index == -1:
+            index = len(self.table)
+        index -= 1
         while index >= 0 and self.table[index].symbol != symbol:
             index -= 1
         if index < 0:
@@ -38,9 +40,6 @@ class SymbolTable:
         return self.table[index], index
     
     def addEntry(self, entry: SymbolEntry):
-        _, ind = self.search(entry.symbol)
-        if ind is not None:
-            self.table.pop(ind)
         self.table.append(entry)
     
     def add(self, *args, **kwargs):
@@ -116,11 +115,9 @@ class Interpreter:
                 fexprlist: RFPLParser.FexprlistContext = tree.fexprlist()
                 base_nxt += fexprlist.getTypedRuleContexts(RFPLParser.FexprContext)
             symb = tree.Symbol().getText()
-            syment, symind = self.symbol_table.search(symb)
+            syment, symind = self.symbol_table.search(symb, symbol_index)
             if syment is None:
                 raise Exception('function {} not defined'.format(symb))
-            if symbol_index != -1 and symind >= symbol_index:
-                raise Exception('can not call function {}'.format(symb))
             debug('subcall to', symb)
             return syment.call(symind, BaseList(base_nxt, blist), args)
         elif isinstance(tree, RFPLParser.BracketContext):
@@ -169,7 +166,7 @@ class Interpreter:
 
     def interpretNexpr(self, tree):
         if not isinstance(tree, RFPLParser.NexprContext):
-            raise Exception('tree must represent a fexpr, got {}'.format(type(tree)))
+            raise Exception('tree must represent a nexpr, got {}'.format(type(tree)))
         if tree.natural() is not None:
             return Natural.interpret(tree.natural())
         fexpr: RFPLParser.FexprContext = tree.fexpr()
