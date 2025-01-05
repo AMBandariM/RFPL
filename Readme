@@ -1,3 +1,4 @@
-grammar -> python:
-$ antlr4 -Dlanguage=Python3 rfpl.g4
-
+TODO:
++ grammar check for submission
++ load inside load
+- check before insert 2 func_table

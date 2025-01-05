@@ -60,11 +60,6 @@ class Interpreter:
             call=lambda _index, _blist, args : args[0].succ(), 
             builtin=True
         )
-        self.symbol_table.add(
-            symbol='load-basics',
-            call=lambda _index, _blist, _args : self.load_basics(),
-            builtin=True
-        )
 
     def load_basics(self):
         self.symbol_table.add(
