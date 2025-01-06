@@ -63,7 +63,7 @@ class Natural:
 
     def getEntry(self, ind: 'Natural'):
         if self.natural == 0 or self.natural == -1:
-            return Natural(-1)
+            return Natural(self.natural)
         ind = ind.toInt()
         self.factor()
         if ind >= len(self.natural):
@@ -71,8 +71,8 @@ class Natural:
         return self.natural[ind]
         
     def setEntry(self, ind: 'Natural', nat: 'Natural'):
-        if self.natural == 0 or self.natural:
-            return Natural(-1)
+        if self.natural == 0 or self.natural == -1:
+            return Natural(self.natural)
         result = self.copy()
         ind = ind.toInt()
         result.factor()
