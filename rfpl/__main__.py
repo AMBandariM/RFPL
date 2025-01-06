@@ -4,8 +4,44 @@ from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.styles import Style
 import re
-from .interpreter import Interpreter, Natural
+from .interpreter import Interpreter
+from .natural import Natural
 import os
+
+import antlr4
+from antlr4.error.ErrorListener import ErrorListener
+from .RFPLLexer import RFPLLexer
+from .RFPLParser import RFPLParser
+
+class QuietErrorListener(ErrorListener):
+    def __init__(self):
+        super().__init__()
+        self.has_errors = False
+
+    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+        self.has_errors = True
+
+
+def check_grammar(cmd, superc=True):
+    if superc and re.match(r'^\s*(exit|finish|end|list|save\s+[\w/\-]+)\s*$',
+                cmd):
+        return True
+    if re.match(r'^\s*load\s+[\w/\-]+\s*$', cmd):
+        return True
+    try:
+        input_stream = antlr4.InputStream(cmd)
+        lexer = RFPLLexer(input_stream)
+        stream = antlr4.CommonTokenStream(lexer)
+        parser = RFPLParser(stream)
+        error_listener = QuietErrorListener()
+        parser.removeErrorListeners()
+        parser.addErrorListener(error_listener)
+        parser.line()
+    except Exception:
+        return False
+
+    return not error_listener.has_errors
+
 
 custom_style = Style.from_dict({
     'super': 'fg:magenta',
@@ -27,37 +63,52 @@ class CustomLexer(Lexer):
         return get_line
 
 session = PromptSession(lexer=CustomLexer(), style=custom_style)
-
-
 def multiline_input():
-    lines = []
+    cmd = ''
     fst = True
     with patch_stdout():
         while True:
-            line = session.prompt('>> ' if fst else '   ').strip()
+            line = session.prompt('>> ' if fst else '>  ').strip()
             fst = False
             if not line:
                 break
-            if line[-1] != '\\':
-                lines.append(line)
+            cmd += line + ' '
+            if check_grammar(cmd):
                 break
-            lines.append(line[:-1])
-    return ' '.join(lines)
+    return cmd
 
-def load(intr: Interpreter, filename: str):
+def load(intr: Interpreter, filename: str, loaded=[]):
+    if filename in loaded:
+        return
+    if filename == 'basics':
+        intr.load_basics()
+        print('\033[32m', end='')
+        for func in ['Add', 'Sub', 'Mul', 'Pow', 'Get', 'Set', 'Int', 'List', 'Mod']:
+            print(f' . Function {func} added')
+        print('\033[0m', end=''if loaded else '\n')
+        return
     filename += '.rfpl'
     try:
         with open(filename, 'r') as f:
             lines = f.readlines()
             cmd = ''
             for line in lines:
-                line = line.strip()
-                if line and line[-1] == '\\':
-                    cmd += line[:-1] + ' '
+                if line[0] == ';':
                     continue
-                cmd += line
-                cmd = cmd.strip()
-                if cmd:
+                cmd += line.strip() + ' '
+                if cmd == ' ':
+                    cmd = ''
+                    continue
+                if not line.strip():
+                    print(f'\033[31mSorry, I didn\'t understood this one:\n{cmd.strip()}\033[0m')
+                    cmd = ''
+                    continue
+                if not check_grammar(cmd, superc=False):
+                    continue
+                mtch = re.match(r'^\s*load\s+(?P<FILE>[\w/\-]+)\s*$', cmd)
+                if mtch:
+                    load(intr, mtch.group('FILE'), loaded + [filename])
+                else:
                     suc, res = intr.interpret(cmd)
                     if suc != 'Success':
                         print(f'\033[31m{suc}\033[0m')
@@ -80,9 +131,6 @@ def save(filename:str):
             f.write(hist)
             print(f'   \033[33msaved on {filename}\033[0m\n')
 
-def test(fun1, fun2):
-    pass
-
 if __name__ == '__main__':
     intr = Interpreter()
     while True:
@@ -92,26 +140,25 @@ if __name__ == '__main__':
             break
         if not line.strip():
             continue
-        if re.match(r'exit|finish|end', line):
+        if re.match(r'^\s*(exit|finish|end)\s*$', line):
             break
         if re.match(r'list', line):
-            print('\033[33m.. ', end='')
-            for fun in intr.func_table.keys():
-                if fun != 'S':
-                    print(fun, end=' ')
-            print('\033[0m\n')
+            print('\033[33m..', end='')
+            out = []
+            outstr = ''
+            for fun in intr.symbol_table.table[::-1]:
+                if fun.symbol != 'S' and fun.symbol not in out:
+                    outstr = ' ' + fun.symbol + (f'[{fun.basesz}]' if fun.basesz else '') + outstr
+                    out.append(fun.symbol)
+            print(f'{outstr}\033[0m\n')
             continue
-        mtch = re.match(r'load (?P<FILE>[^\s]+)', line)
+        mtch = re.match(r'^\s*load\s+(?P<FILE>[\w/\-]+)\s*$', line)
         if mtch:
             load(intr, mtch.group('FILE'))
             continue
-        mtch = re.match(r'save (?P<FILE>\w+)', line)
+        mtch = re.match(r'^\s*save\s+(?P<FILE>[\w/\-]+)\s*$', line)
         if mtch:
             save(mtch.group('FILE'))
-            continue
-        mtch = re.match(r'test (?P<FUN1>\w+) (?P<FUN2>\w+)', line)
-        if mtch:
-            test(mtch.group('FUN1'), mtch.group('FUN2'))
             continue
         hist += line.strip() + '\n\n'
         suc, res = intr.interpret(line)
