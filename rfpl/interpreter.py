@@ -13,7 +13,7 @@ from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
 from .natural import Natural, NaturalList
 
-DEBUG = False
+DEBUG = True
 def debug(*args):
     if not DEBUG:
         return
@@ -230,10 +230,10 @@ class Interpreter:
                 cur = self.interpretFexpr(g, blist, args)
             return cur
         elif isinstance(tree, RFPLParser.BuiltinMnContext):
-            f = tree.fexpr(0)
+            f = tree.fexpr()
             args = NaturalList([Natural(0)]) + args
             while not self.interpretFexpr(f, blist, args).isZero():
-                args[0].natural += 1
+                args[0].natural = args[0].toInt() + 1
             return args[0]
 
     def interpretNexpr(self, tree):
@@ -291,6 +291,7 @@ class Interpreter:
             basesz = max(basesz, self.preproc(f))
             basesz = max(basesz, self.preproc(g))
         elif isinstance(tree, RFPLParser.BuiltinMnContext):
+            f = tree.fexpr()
             basesz = max(basesz, self.preproc(f))
         else:
             raise Exception(f'unknown node {type(tree)}')
