@@ -186,12 +186,12 @@ class NaturalList:
 
     def __getitem__(self, index: int):
         if index >= len(self.content):
-            return Natural(None)
+            return Natural(0)
         return self.content[index]
 
     def __setitem__(self, index: int, value: Natural):
         while len(self.content) <= index:
-            self.content.append(Natural(None))
+            self.content.append(Natural(0))
         self.content[index] = value
     
     def drop(self, nitem: int):
