@@ -21,9 +21,15 @@ def debug(*args):
 
 
 @dataclass
+class BaseList:
+    args: List[RFPLParser.FexprContext]
+    prev: 'BaseList' = None
+
+
+@dataclass
 class SymbolEntry:
     symbol: str
-    call: Callable
+    call: Callable[[BaseList, NaturalList], Natural]
     builtin: bool = False
     ix: int = -1
     basesz: int = 0
@@ -49,14 +55,8 @@ class SymbolTable:
         return self.addEntry(SymbolEntry(*args, **kwargs))
 
 
-@dataclass
-class BaseList:
-    args: List[RFPLParser.FexprContext]
-    prev: 'BaseList' = None
-
-
 class HashCache:
-    CACHE = False
+    CACHE = True
 
     def __init__(self, basic_functions):
         self.basic_functions = basic_functions
@@ -80,10 +80,10 @@ class HashCache:
     def makeMockNaturalList(self, n: int):
         m = int(n**0.5)
         a, b, c = random.randint(0,m), random.randint(0,m), random.randint(0,m)
-        return NaturalList([Natural(a), Natural(b), Natural(c), Natural(-1), Natural(-1)])
+        return NaturalList([Natural(a), Natural(b), Natural(c), Natural(None), Natural(None)])
 
     def callAndCache(self, fun: SymbolEntry, blist: BaseList, args: List[Natural]):
-        if len(blist.args) or fun.builtin or not self.CACHE:
+        if (blist is not None and len(blist.args)) or fun.builtin or not self.CACHE:
             return fun.call(blist, args)
         if fun.ix not in self.possibleMatches:
             self.possibleMatches[fun.ix] = self.basic_functions.copy()
@@ -102,8 +102,8 @@ class HashCache:
                 self.possibleMatches[fun.ix].remove(ent)
         mocknatlst = self.makeMockNaturalList(self.counter[fun.ix])
         for ent in self.possibleMatches[fun.ix]:
-            rel = ent.call([], mocknatlst)
-            rez = fun.call([], mocknatlst)
+            rel = ent.call(None, mocknatlst)
+            rez = fun.call(None, mocknatlst)
             if rel.toInt() != rez.toInt():
                 self.possibleMatches[fun.ix].remove(ent)
         if len(self.possibleMatches[fun.ix]):
@@ -172,25 +172,45 @@ class Interpreter:
                 builtin=True
             )
         ]
+        
+        def _getEntry(_blist, args):
+            if args[1].isZero():
+                return Natural(0)
+            return args[1].getEntry(args[0])
+        
+        def _setEntry(_blist, args):
+            if args[2].isZero():
+                return Natural(0)
+            return args[2].setEntry(args[0], args[1])
+        
+        def _int(_blist, args):
+            args[0].simplify()
+            return args[0]
+        
+        def _list(_blist, args):
+            if args[0].isDefined() and not args[0].isZero():
+                args[0].factor()
+            return args[0]
+        
         self.basic_sequential_enteries = [
             SymbolEntry(
                 symbol='Get',
-                call=lambda _blist, args : args[1].getEntry(args[0]),
+                call=_getEntry,
                 builtin=True
             ),
             SymbolEntry(
                 symbol='Set',
-                call=lambda _blist, args : args[2].setEntry(args[0], args[1]),
+                call=_setEntry,
                 builtin=True
             ),
             SymbolEntry(
                 symbol='Int',
-                call=lambda _blist, args : args[0].simplify() or args[0],
+                call=_int,
                 builtin=True
             ),
             SymbolEntry(
                 symbol='List',
-                call=lambda _blist, args : args[0].factor() or args[0],
+                call=_list,
                 builtin=True
             ),
         ]
@@ -250,8 +270,9 @@ class Interpreter:
             f = tree.fexpr(0)
             g = tree.fexpr(1)
             n = args[0].toInt()
-            cur = self.interpretFexpr(f, blist, args.cuthead())
-            args = NaturalList([Natural(-1), Natural(-1)]) + args.cuthead()
+            args = args.drop(1)
+            cur = self.interpretFexpr(f, blist, args)
+            args = NaturalList([Natural(None), Natural(None)]) + args
             for i in range(n):
                 args[0] = cur
                 args[1] = Natural(i)
@@ -261,7 +282,7 @@ class Interpreter:
             f = tree.fexpr()
             args = NaturalList([Natural(0)]) + args
             while not self.interpretFexpr(f, blist, args).isZero():
-                args[0].natural = args[0].toInt() + 1
+                args[0] = args[0].succ()
             return args[0]
 
     def interpretNexpr(self, tree):

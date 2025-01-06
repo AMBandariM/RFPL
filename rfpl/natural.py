@@ -22,63 +22,81 @@ def getPrime(i):
 
 
 class Natural:
+    __slots__ = ('__natural',)
+
     def __init__(self, natural: Union[int, List['Natural']]):
-        self.natural: Union[int, List['Natural']] = natural
+        if isinstance(natural, int) and natural < 0:
+            raise Exception(f'Cannot initialize natural with negative number {natural}')
+        self.__natural: Union[int, List['Natural']] = natural
+    
+    def isDefined(self):
+        return self.__natural is not None
+
+    def isZero(self):
+        return self.__natural == 0
+    
+    def isOne(self):
+        if isinstance(self.__natural, int):
+            return self.__natural == 1
+        return self.isDefined() and all(x.isZero() for x in self.__natural)
     
     def toInt(self):
-        if isinstance(self.natural, int):
-            return self.natural
+        if not self.isDefined():
+            return -1
+        if isinstance(self.__natural, int):
+            return self.__natural
         num = 1
-        for i, ent in enumerate(self.natural):
+        for i, ent in enumerate(self.__natural):
             num *= getPrime(i) ** ent.toInt()
         return num
     
     def simplify(self):
-        self.natural = self.toInt()
+        self.__natural = self.toInt()
 
     def factor(self):
-        if isinstance(self.natural, list):
+        if isinstance(self.__natural, list):
             return
-        if self.natural < 1:
-            return
-        cur = self.natural
-        self.natural = []
+        if self.isZero() or not self.isDefined():
+            raise Exception('Zero or undefined cannot be factored')
+        cur = self.__natural
+        self.__natural = []
         pi = 0
         while cur > 1:
             cnt = 0
             while cur % getPrime(pi) == 0:
                 cur //= getPrime(pi)
                 cnt += 1
-            self.natural.append(Natural(cnt))
+            self.__natural.append(Natural(cnt))
             pi += 1
     
     def copy(self):
-        if isinstance(self.natural, int):
-            natural = self.natural
-        else:
-            natural = []
-            for nat in self.natural:
-                natural.append(nat.copy())
+        if not self.isDefined():
+            return Natural(None)
+        if isinstance(self.__natural, int):
+            return Natural(self.__natural)
+        natural = []
+        for nat in self.__natural:
+            natural.append(nat.copy())
         return Natural(natural)
 
     def getEntry(self, ind: 'Natural'):
-        if self.natural == 0 or self.natural == -1:
-            return Natural(self.natural)
+        if not self.isDefined() or not ind.isDefined():
+            return Natural(None)
         ind = ind.toInt()
         self.factor()
-        if ind >= len(self.natural):
+        if ind >= len(self.__natural):
             return Natural(0)
-        return self.natural[ind]
+        return self.__natural[ind]
         
     def setEntry(self, ind: 'Natural', nat: 'Natural'):
-        if self.natural == 0 or self.natural == -1:
-            return Natural(self.natural)
+        if not self.isDefined() or not ind.isDefined():
+            return Natural(None)
+        self.factor()
         result = self.copy()
         ind = ind.toInt()
-        result.factor()
-        while len(result.natural) <= ind:
-            result.natural.append(Natural(0))
-        result.natural[ind] = nat
+        while len(result.__natural) <= ind:
+            result.__natural.append(Natural(0))
+        result.__natural[ind] = nat
         return result
     
     @staticmethod
@@ -92,32 +110,27 @@ class Natural:
         return Natural(nats)
     
     def succ(self):
-        nat = self.toInt()
-        return Natural(nat + 1 if nat >= 0 else -1)
-    
-    def isZero(self):
-        return self.natural == 0
-    
-    def isOne(self):
-        if isinstance(self.natural, int):
-            return self.natural == 1
-        return all(x.isZero() for x in self.natural)
+        if not self.isDefined():
+            return Natural(None)
+        return Natural(self.toInt() + 1)
     
     def __add__(self, other: 'Natural'):
-        nat1, nat2 = self.toInt(), other.toInt()
-        return Natural(nat1 + nat2) if nat1 >= 0 and nat2 >= 0 else Natural(-1)
+        if not self.isDefined() or not other.isDefined():
+            return Natural(None)
+        return Natural(self.toInt() + other.toInt())
 
     def __sub__(self, other: 'Natural'):
-        nat1, nat2 = self.toInt(), other.toInt()
-        return Natural(max(nat1 - nat2, 0)) if nat1 >= 0 and nat2 >= 0 else Natural(-1)
+        if not self.isDefined() or not other.isDefined():
+            return Natural(None)
+        return Natural(max(self.toInt() - other.toInt(), 0))
     
     def __mul__(self, other: 'Natural'):
-        if self.natural == -1 or other.natural == -1:
-            return Natural(-1)
-        if isinstance(self.natural, int) or isinstance(other.natural, int):
+        if not self.isDefined() or not other.isDefined():
+            return Natural(None)
+        if isinstance(self.__natural, int) or isinstance(other.__natural, int):
             return Natural(self.toInt() * other.toInt())
-        a = self.natural.copy()
-        b = other.natural.copy()
+        a = self.__natural.copy()
+        b = other.__natural.copy()
         if len(a) < len(b):
             a += [Natural(0)] * (len(b) - len(a))
         elif len(b) < len(a):
@@ -125,35 +138,41 @@ class Natural:
         return Natural(list(x + y for x, y in zip(a, b)))
 
     def __pow__(self, other: 'Natural'):
-        if self.natural == -1 or other.natural == -1:
-            return Natural(-1)
+        if not self.isDefined() or not other.isDefined():
+            return Natural(None)
         if other.isZero():
             return Natural(1)
         if other.isOne():
-            return Natural(self.natural)
-        if isinstance(self.natural, int):
+            return Natural(self.__natural)
+        if isinstance(self.__natural, int):
             p = other.toInt()
-            return Natural(self.toInt() ** p)
-        return Natural(list(x * other for x in self.natural))
+            return Natural(self.__natural ** p)
+        return Natural(list(x * other for x in self.__natural))
 
     def __mod__(self, other: 'Natural'):
-        if self.natural == -1 or other.natural == -1:
-            return Natural(-1)
-        return Natural(self.toInt() % other.toInt()) if other.natural != 0 else Natural(self.toInt())
+        if not self.isDefined() or not other.isDefined():
+            return Natural(None)
+        if other.isZero():
+            return self
+        return Natural(self.toInt() % other.toInt())
     
     def __repr__(self):
-        if isinstance(self.natural, int):
-            return 'N({})'.format(self.natural)
+        if not self.isDefined():
+            return 'Undefined'
+        if isinstance(self.__natural, int):
+            return 'N({})'.format(self.__natural)
         subreps = []
-        for ent in self.natural:
+        for ent in self.__natural:
             subreps.append(ent.__repr__())
         return 'N<{}>'.format(', '.join(subreps))
     
     def __str__(self):
-        if isinstance(self.natural, int):
-            return f'{self.natural}' if self.natural > -1 else 'NotDefined'
+        if not self.isDefined():
+            return 'Undefined'
+        if isinstance(self.__natural, int):
+            return f'{self.__natural}'
         subreps = []
-        for ent in self.natural:
+        for ent in self.__natural:
             subreps.append(ent.__str__())
         return '<{}>'.format(', '.join(subreps))
 
@@ -166,16 +185,16 @@ class NaturalList:
         return NaturalList(self.content.copy() + other.content.copy())
 
     def __getitem__(self, index: int):
-        while len(self.content) <= index:
-            self.content.append(Natural(0))
+        if index >= len(self.content):
+            return Natural(None)
         return self.content[index]
 
     def __setitem__(self, index: int, value: Natural):
         while len(self.content) <= index:
-            self.content.append(Natural(0))
+            self.content.append(Natural(None))
         self.content[index] = value
     
-    def cuthead(self, index: int = 1):
-        while len(self.content) < index:
-            self.content.append(Natural(0))
-        return NaturalList(self.content.copy()[index:])
+    def drop(self, nitem: int):
+        if len(self.content) < nitem:
+            return NaturalList([])
+        return NaturalList(self.content.copy()[nitem:])
