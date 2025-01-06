@@ -56,6 +56,8 @@ class BaseList:
 
 
 class HashCache:
+    CACHE = False
+
     def __init__(self, basic_functions):
         self.basic_functions = basic_functions
         self.cache = {}
@@ -81,7 +83,7 @@ class HashCache:
         return NaturalList([Natural(a), Natural(b), Natural(c), Natural(-1), Natural(-1)])
 
     def callAndCache(self, fun: SymbolEntry, blist: BaseList, args: List[Natural]):
-        if len(blist.args) or fun.builtin:
+        if len(blist.args) or fun.builtin or not self.CACHE:
             return fun.call(blist, args)
         if fun.ix not in self.possibleMatches:
             self.possibleMatches[fun.ix] = self.basic_functions.copy()
@@ -110,6 +112,34 @@ class HashCache:
                 debug(f'replacing {fun.symbol} with {self.possibleMatches[fun.ix][0].symbol} ...')
         self.cache[fun.ix][hsh] = res
         return res
+
+
+@dataclass
+class InputError:
+    message: str
+    start: int = None
+    stop: int = None
+
+    def setContext(self, ctx: ParserRuleContext):
+        self.start = ctx.start.start
+        self.stop = ctx.stop.stop
+        return self
+
+    def toString(self, stream: InputStream = None):
+        s = self.message + '\n'
+        if self.start is None or self.stop is None or stream is None:
+            return s
+        s += '  ' + str(stream) + '\n'
+        s += '  ' + ' ' * self.start + '^' + '~' * max(0, self.stop - self.start) + '\n'
+        return s
+
+
+class ThrowingErrorListener(ErrorListener):
+    def __init__(self, interpreter: 'Interpreter'):
+        self.interpreter = interpreter
+
+    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+        self.interpreter.errors.append(InputError(f'ERROR: {msg}', offendingSymbol.start, offendingSymbol.stop))
 
 
 class Interpreter:
@@ -174,6 +204,7 @@ class Interpreter:
         self.cache = HashCache(
             self.basic_arithmetic_enteries + self.basic_sequential_enteries + self.basic_numbertheory_enteries
         )
+        self.errors: List[InputError] = []
 
     def load_basics(self):
         self.load_basic_arithmetic_enteries()
@@ -199,17 +230,14 @@ class Interpreter:
             if tree.fexprlist() is not None:
                 fexprlist: RFPLParser.FexprlistContext = tree.fexprlist()
                 base_nxt += fexprlist.getTypedRuleContexts(RFPLParser.FexprContext)
-            symb = tree.Symbol().getText()
-            syment = tree.children[-1]
+            syment = tree.c_syment
             return self.cache.callAndCache(syment, BaseList(base_nxt, blist), args)
         elif isinstance(tree, RFPLParser.BracketContext):
-            ind = Natural.interpret(tree.natural()).toInt()
-            return self.interpretFexpr(blist.args[ind], blist.prev, args)
+            return self.interpretFexpr(blist.args[tree.c_number], blist.prev, args)
         elif isinstance(tree, RFPLParser.IdentityContext):
-            ind = Natural.interpret(tree.natural()).toInt()
-            return args[ind]
+            return args[tree.c_number]
         elif isinstance(tree, RFPLParser.ConstantContext):
-            return Natural.interpret(tree.natural())
+            return tree.c_natural
         elif isinstance(tree, RFPLParser.BuiltinCnContext):
             f, *gs = tree.fexprlist().getTypedRuleContexts(RFPLParser.FexprContext)
             fargs = []
@@ -238,7 +266,7 @@ class Interpreter:
 
     def interpretNexpr(self, tree):
         if not isinstance(tree, RFPLParser.NexprContext):
-            raise Exception('tree must represent a nexpr, got {}'.format(type(tree)))
+            raise Exception('Tree must represent a nexpr, got {}'.format(type(tree)))
         if tree.natural() is not None:
             return Natural.interpret(tree.natural())
         fexpr: RFPLParser.FexprContext = tree.fexpr()
@@ -246,18 +274,13 @@ class Interpreter:
         args = []
         for nexpr in nexprlist.getTypedRuleContexts(RFPLParser.NexprContext):
             args.append(self.interpretNexpr(nexpr))
-        self.preproc(fexpr)
+        self.preprocess(fexpr)
+        if self.errors:
+            return None
         args = NaturalList(args)
         return self.interpretFexpr(fexpr, None, args)
 
-    class ThrowingErrorListener(ErrorListener):
-        def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-            ex = ParseCancellationException(f'line {line}: {column} {msg}')
-            ex.line = line
-            ex.column = column
-            raise ex
-
-    def preproc(self, tree):
+    def preprocess(self, tree):
         basesz = 0
         tree = tree.getChild(0)
         if isinstance(tree, RFPLParser.FexprleafContext):
@@ -268,70 +291,92 @@ class Interpreter:
             symb = tree.Symbol().getText()
             syment = self.symbol_table.search(symb)
             if syment is None:
-                raise Exception(f'function {symb} not defined')
-            if len(base_nxt) < syment.basesz:
-                raise Exception(f'{symb} needs {syment.basesz} bases but got {len(base_nxt)}')
+                self.errors.append(InputError(
+                    message=f'ERROR: Function {symb} is not defined',
+                ).setContext(tree))
+                return basesz
+            if len(base_nxt) != syment.basesz:
+                self.errors.append(InputError(
+                    message=f'ERROR: {symb} accepts {syment.basesz} bases but got {len(base_nxt)}'
+                ).setContext(tree))
+                return basesz
             tree.children.append(syment)
-            for func in base_nxt:
-                basesz = max(basesz, self.preproc(func))
+            tree.c_syment = syment  # custom attribute added to the tree
+            for b in base_nxt:
+                basesz = max(basesz, self.preprocess(b))
         elif isinstance(tree, RFPLParser.BracketContext):
-            basesz = max(basesz, Natural.interpret(tree.natural()).toInt() + 1)
+            tree.c_number = Natural.interpret(tree.natural()).toInt() 
+            basesz = max(basesz, tree.c_number + 1)
         elif isinstance(tree, RFPLParser.IdentityContext):
-            pass
+            tree.c_number = Natural.interpret(tree.natural()).toInt()
         elif isinstance(tree, RFPLParser.ConstantContext):
-            pass
+            tree.c_natural = Natural.interpret(tree.natural())
         elif isinstance(tree, RFPLParser.BuiltinCnContext):
             f, *gs = tree.fexprlist().getTypedRuleContexts(RFPLParser.FexprContext)
             for g in gs:
-                basesz = max(basesz, self.preproc(g))
-            basesz = max(basesz, self.preproc(f))
+                basesz = max(basesz, self.preprocess(g))
+            basesz = max(basesz, self.preprocess(f))
         elif isinstance(tree, RFPLParser.BuiltinPrContext):
             f = tree.fexpr(0)
             g = tree.fexpr(1)
-            basesz = max(basesz, self.preproc(f))
-            basesz = max(basesz, self.preproc(g))
+            basesz = max(basesz, self.preprocess(f))
+            basesz = max(basesz, self.preprocess(g))
         elif isinstance(tree, RFPLParser.BuiltinMnContext):
             f = tree.fexpr()
-            basesz = max(basesz, self.preproc(f))
+            basesz = max(basesz, self.preprocess(f))
         else:
-            raise Exception(f'unknown node {type(tree)}')
+            raise Exception(f'Unknown node {type(tree)}')
         return basesz
+    
+    def buildErrorMessage(self):
+        msg = ''
+        for err in self.errors:
+            msg += err.toString(self.input_stream)
+        return msg
 
     def interpret(self, line:str):
+        self.errors = []
         try:
-            input_stream = InputStream(line.strip())
-            lexer = RFPLLexer(input_stream)
+            self.input_stream = InputStream(line.strip())
+            lexer = RFPLLexer(self.input_stream)
             lexer.removeErrorListeners()
-            lexer.addErrorListener(self.ThrowingErrorListener())
+            lexer.addErrorListener(ThrowingErrorListener(self))
 
             token_stream = CommonTokenStream(lexer)
 
             parser = RFPLParser(token_stream)
             parser.removeErrorListeners()
-            parser.addErrorListener(self.ThrowingErrorListener())
+            parser.addErrorListener(ThrowingErrorListener(self))
 
             tree = parser.line()
+            if self.errors:
+                return False, self.buildErrorMessage()
+            
             tree = tree.getChild(0)
             if isinstance(tree, RFPLParser.DefineContext):
                 symb = tree.Symbol().getText()
                 fexpr = tree.fexpr()
-                basesz = self.preproc(fexpr)
+                basesz = self.preprocess(fexpr)
+                if self.errors:
+                    return False, self.buildErrorMessage()
                 message = f'Function {symb} added'
                 syment = self.symbol_table.search(symb)
                 if syment is not None:
                     if syment.builtin:
-                        raise Exception('cannot redefine builtin function {}'.format(symb))
+                        return False, f'ERROR: Cannot redefine a builtin function {symb}'
                     message = f'Function {symb} redefined'
                 self.symbol_table.add(
                     symbol=symb,
                     call=lambda blist, args, fexpr=fexpr: self.interpretFexpr(fexpr, blist, args),
                     basesz = basesz
                 )
-                return 'Success', message
+                return True, message
             elif isinstance(tree, RFPLParser.ExamineContext):
                 result = self.interpretNexpr(tree.nexpr())
-                return 'Success', result
+                if self.errors:
+                    return False, self.buildErrorMessage()
+                return True, result
             else:
-                raise Exception('unknown node {}'.format(type(tree)))  # I leave this one !
+                raise Exception('Unknown node {}'.format(type(tree)))
         except Exception as e:
-            return f'ERROR: {traceback.format_exc()}' if DEBUG else f'ERROR: {e}', None
+            return False, f'CRITICAL: {traceback.format_exc()}'

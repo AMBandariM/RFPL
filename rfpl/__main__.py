@@ -23,23 +23,23 @@ class QuietErrorListener(ErrorListener):
 
 
 def check_grammar(cmd, superc=True):
-    if superc and re.match(r'^\s*(exit|finish|end|list|save\s+[\w/\-]+)\s*$',
-                cmd):
+    if superc and re.match(r'^\s*(exit|finish|end|list|save\s+[\w/\-]+)\s*$', cmd):
         return True
     if re.match(r'^\s*load\s+[\w/\-]+\s*$', cmd):
         return True
+    input_stream = antlr4.InputStream(cmd)
+    lexer = RFPLLexer(input_stream)
+    stream = antlr4.CommonTokenStream(lexer)
+    parser = RFPLParser(stream)
+    error_listener = QuietErrorListener()
+    lexer.removeErrorListeners()
+    lexer.addErrorListener(error_listener)
+    parser.removeErrorListeners()
+    parser.addErrorListener(error_listener)
     try:
-        input_stream = antlr4.InputStream(cmd)
-        lexer = RFPLLexer(input_stream)
-        stream = antlr4.CommonTokenStream(lexer)
-        parser = RFPLParser(stream)
-        error_listener = QuietErrorListener()
-        parser.removeErrorListeners()
-        parser.addErrorListener(error_listener)
         parser.line()
     except Exception:
         return False
-
     return not error_listener.has_errors
 
 
@@ -95,27 +95,23 @@ def load(intr: Interpreter, filename: str, loaded=[]):
             for line in lines:
                 if line[0] == ';':
                     continue
-                cmd += line.strip() + ' '
-                if cmd == ' ':
-                    cmd = ''
+                cmd += line.strip()
+                if not cmd:
                     continue
-                if not line.strip():
-                    print(f'\033[31mSorry, I didn\'t understood this one:\n{cmd.strip()}\033[0m')
-                    cmd = ''
-                    continue
+                cmd += ' '
                 if not check_grammar(cmd, superc=False):
                     continue
                 mtch = re.match(r'^\s*load\s+(?P<FILE>[\w/\-]+)\s*$', cmd)
                 if mtch:
                     load(intr, mtch.group('FILE'), loaded + [filename])
                 else:
-                    suc, res = intr.interpret(cmd)
-                    if suc != 'Success':
-                        print(f'\033[31m{suc}\033[0m')
-                    elif isinstance(res, Natural):
-                        print(f'\033[33m = {res}\033[0m')
+                    ok, result = intr.interpret(cmd)
+                    if not ok:
+                        print(f'\033[31m{result}\033[0m')
+                    elif isinstance(result, Natural):
+                        print(f'\033[33m = {result}\033[0m')
                     else:
-                        print(f'\033[33m . {res}\033[0m')
+                        print(f'\033[33m . {result}\033[0m')
                 cmd = ''
             print()
     except Exception as e:
@@ -161,10 +157,10 @@ if __name__ == '__main__':
             save(mtch.group('FILE'))
             continue
         hist += line.strip() + '\n\n'
-        suc, res = intr.interpret(line)
-        if suc != 'Success':
-            print(f'\033[31m{suc}\033[0m\n')
-        elif isinstance(res, Natural):
-            print(f'\033[33m = {res}\033[0m\n')
+        ok, result = intr.interpret(line)
+        if not ok:
+            print(f'\033[31m{result}\033[0m')
+        elif isinstance(result, Natural):
+            print(f'\033[33m = {result}\033[0m\n')
         else:
-            print(f'\033[33m . {res}\033[0m\n')
+            print(f'\033[33m . {result}\033[0m\n')
