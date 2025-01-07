@@ -1,4 +1,4 @@
-load basics
+#load "basics"
 
 prime = Cn[Int, Cn[Set, !0, #1, #<>]]
 
