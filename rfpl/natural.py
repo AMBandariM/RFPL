@@ -103,11 +103,13 @@ class Natural:
     def interpret(tree: RFPLParser.NaturalContext):
         if tree.Number() is not None:
             return Natural(int(tree.Number().getText()))
-        naturallist = tree.naturallist()
-        nats = []
-        for subtr in naturallist.getTypedRuleContexts(RFPLParser.NaturalContext):
-            nats.append(Natural.interpret(subtr))
-        return Natural(nats)
+        if tree.naturallist() is not None:
+            naturallist = tree.naturallist()
+            nats = []
+            for subtr in naturallist.getTypedRuleContexts(RFPLParser.NaturalContext):
+                nats.append(Natural.interpret(subtr))
+            return Natural(nats)
+        return Natural(None)
     
     def succ(self):
         if not self.isDefined():

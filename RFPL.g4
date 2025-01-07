@@ -19,15 +19,16 @@ fexprlist     : fexpr (',' fexpr)* ;
 builtinCn     : 'Cn' '[' fexprlist ']' ;
 builtinPr     : 'Pr' '[' fexpr ',' fexpr ']' ;
 builtinMn     : 'Mn' '[' fexpr ']' ;
-identity      : '!' natural ;
+identity      : '!' Number ;
 constant      : '#' natural ;
-bracket       : '@' natural ;
+bracket       : '@' Number ;
 nexpr         : fexpr '(' nexprlist ')' 
               | natural ;
 nexprlist     : /* epsilon */ 
               | nexpr (',' nexpr)* ;
 natural       : Number 
-              | '<' naturallist '>' ;
+              | '<' naturallist '>'
+              | '_' ;   /* similar to bottom symbol */
 naturallist   : /* epsilon */ 
               | natural (',' natural)* ;
 

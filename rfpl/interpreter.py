@@ -281,8 +281,12 @@ class Interpreter:
         elif isinstance(tree, RFPLParser.BuiltinMnContext):
             f = tree.fexpr()
             args = NaturalList([Natural(0)]) + args
-            while not self.interpretFexpr(f, blist, args).isZero():
+            result = self.interpretFexpr(f, blist, args)
+            while result.isDefined() and not result.isZero():
                 args[0] = args[0].succ()
+                result = self.interpretFexpr(f, blist, args)
+            if not result.isDefined():
+                return Natural(None)
             return args[0]
 
     def interpretNexpr(self, tree):
@@ -297,7 +301,7 @@ class Interpreter:
             args.append(self.interpretNexpr(nexpr))
         self.preprocess(fexpr)
         if self.errors:
-            return None
+            return Natural(None)
         args = NaturalList(args)
         return self.interpretFexpr(fexpr, None, args)
 
@@ -326,10 +330,10 @@ class Interpreter:
             for b in base_nxt:
                 basesz = max(basesz, self.preprocess(b))
         elif isinstance(tree, RFPLParser.BracketContext):
-            tree.c_number = Natural.interpret(tree.natural()).toInt() 
+            tree.c_number = int(tree.Number().getText() )
             basesz = max(basesz, tree.c_number + 1)
         elif isinstance(tree, RFPLParser.IdentityContext):
-            tree.c_number = Natural.interpret(tree.natural()).toInt()
+            tree.c_number = int(tree.Number().getText())
         elif isinstance(tree, RFPLParser.ConstantContext):
             tree.c_natural = Natural.interpret(tree.natural())
         elif isinstance(tree, RFPLParser.BuiltinCnContext):
