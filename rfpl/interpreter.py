@@ -141,6 +141,15 @@ class ThrowingErrorListener(ErrorListener):
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
         self.interpreter.errors.append(InputError(f'ERROR: {msg}', offendingSymbol.start, offendingSymbol.stop))
 
+class QuietErrorListener(ErrorListener):
+    def __init__(self):
+        super().__init__()
+        self.has_unexpected_eof = False
+
+    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
+        if offendingSymbol and offendingSymbol.type == Token.EOF:
+            self.has_unexpected_eof = True
+
 
 class Interpreter:
     def __init__(self):
@@ -226,22 +235,19 @@ class Interpreter:
         )
         self.errors: List[InputError] = []
 
-    def load_basics(self):
-        self.load_basic_arithmetic_enteries()
-        self.load_basic_sequential_enteries()
-        self.load_basic_numbertheory_enteries()
-    
-    def load_basic_arithmetic_enteries(self):
-        for ent in self.basic_arithmetic_enteries:
+    def loadList(self, lst: list):
+        names = []
+        for ent in lst:
             self.symbol_table.addEntry(ent)
-    
-    def load_basic_sequential_enteries(self):
-        for ent in self.basic_sequential_enteries:
-            self.symbol_table.addEntry(ent)
-    
-    def load_basic_numbertheory_enteries(self):
-        for ent in self.basic_numbertheory_enteries:
-            self.symbol_table.addEntry(ent)
+            names.append(ent.symbol)
+        return names
+
+    def loadBasics(self):
+        names = []
+        names += self.loadList(self.basic_arithmetic_enteries)
+        names += self.loadList(self.basic_sequential_enteries)
+        names += self.loadList(self.basic_numbertheory_enteries)
+        return names
 
     def interpretFexpr(self, tree, blist: BaseList, args: NaturalList) -> Natural:
         tree = tree.getChild(0)
@@ -353,17 +359,22 @@ class Interpreter:
             raise Exception(f'Unknown node {type(tree)}')
         return basesz
     
-    def buildErrorMessage(self):
+    def buildErrorMessage(self, input_stream):
         msg = ''
         for err in self.errors:
-            msg += err.toString(self.input_stream)
-        return msg
-
-    def interpret(self, line: str):
+            msg += err.toString(input_stream)
         self.errors = []
+        return msg
+    
+    def interpretString(self, text: str):
+        return text[1:-1].replace('\\\\', '\\').replace('\\"', '"').replace('\\\'', '\'')
+    
+    def interpret(self, line: str):
+        if self.errors: # precautionary check
+            return False, self.buildErrorMessage(None)
         try:
-            self.input_stream = InputStream(line.strip())
-            lexer = RFPLLexer(self.input_stream)
+            input_stream = InputStream(line.strip())
+            lexer = RFPLLexer(input_stream)
             lexer.removeErrorListeners()
             lexer.addErrorListener(ThrowingErrorListener(self))
 
@@ -373,17 +384,20 @@ class Interpreter:
             parser.removeErrorListeners()
             parser.addErrorListener(ThrowingErrorListener(self))
 
-            tree = parser.line()
+            tree = parser.singleline()
             if self.errors:
-                return False, self.buildErrorMessage()
+                return False, self.buildErrorMessage(input_stream)
 
-            if tree.define() is not None:
+            tree = tree.line()
+            if tree is None:
+                return True, None
+            elif tree.define() is not None:
                 tree = tree.define()
                 symb = tree.Symbol().getText()
                 fexpr = tree.fexpr()
                 basesz = self.preprocess(fexpr)
                 if self.errors:
-                    return False, self.buildErrorMessage()
+                    return False, self.buildErrorMessage(input_stream)
                 message = f'Function {symb} added'
                 syment = self.symbol_table.search(symb)
                 if syment is not None:
@@ -400,9 +414,58 @@ class Interpreter:
                 tree = tree.examine()
                 result = self.interpretNexpr(tree.nexpr())
                 if self.errors:
-                    return False, self.buildErrorMessage()
+                    return False, self.buildErrorMessage(input_stream)
                 return True, result
+            elif tree.pragma() is not None:
+                tree = tree.pragma()
+                if tree.load() is not None:
+                    tree = tree.load()
+                    filename = self.interpretString(tree.String().getText())
+                    ok, message = self.loadFile(filename)
+                    if not ok:
+                        self.errors.append(InputError(
+                            f'ERROR: Unable to load file {filename}'
+                        ).setContext(tree))
+                        return False, message + self.buildErrorMessage(input_stream)
+                    return True, message
+                else:
+                    raise Exception(f'Unknown pragma {tree.getText()}')
             else:
-                return True, None
+                raise Exception(f'Unknown tree type {tree.getText()}')
         except Exception as e:
             return False, f'CRITICAL: {traceback.format_exc()}'
+        
+    def parsable(self, text: str):
+        input_stream = InputStream(text)
+        lexer = RFPLLexer(input_stream)
+        stream = CommonTokenStream(lexer)
+        parser = RFPLParser(stream)
+        error_listener = QuietErrorListener()
+        lexer.removeErrorListeners()
+        lexer.addErrorListener(error_listener)
+        parser.removeErrorListeners()
+        parser.addErrorListener(error_listener)
+        parser.singleline()
+        return not error_listener.has_unexpected_eof
+        
+    def loadFile(self, filename: str):
+        if filename == 'basics':
+            names = self.loadBasics()
+            return True, 'Basic functions added: ' + ', '.join(names)
+        ok = True
+        message = ''
+        with open(filename, 'r') as file:
+            lines = file.readlines()
+            cmd = ''
+            for line in lines:
+                cmd += line.strip() + ' '
+                if not self.parsable(cmd):
+                    continue
+                cmdok, cmdresult = self.interpret(cmd)
+                if not cmdok:
+                    ok = False
+                    message += cmdresult
+                cmd = ''
+        if ok:
+            message = f'File {filename} loaded'
+        return ok, message

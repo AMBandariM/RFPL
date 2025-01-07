@@ -13,34 +13,13 @@ from antlr4.error.ErrorListener import ErrorListener
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
 
-class QuietErrorListener(ErrorListener):
-    def __init__(self):
-        super().__init__()
-        self.has_errors = False
-
-    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        self.has_errors = True
-
 
 def check_grammar(cmd, superc=True):
     if superc and re.match(r'^\s*(exit|finish|end|list|save\s+[\w/\-]+)\s*$', cmd):
         return True
     if re.match(r'^\s*load\s+[\w/\-]+\s*$', cmd):
         return True
-    input_stream = antlr4.InputStream(cmd)
-    lexer = RFPLLexer(input_stream)
-    stream = antlr4.CommonTokenStream(lexer)
-    parser = RFPLParser(stream)
-    error_listener = QuietErrorListener()
-    lexer.removeErrorListeners()
-    lexer.addErrorListener(error_listener)
-    parser.removeErrorListeners()
-    parser.addErrorListener(error_listener)
-    try:
-        parser.line()
-    except Exception:
-        return False
-    return not error_listener.has_errors
+    return intr.parsable(cmd)
 
 
 custom_style = Style.from_dict({
@@ -65,11 +44,11 @@ class CustomLexer(Lexer):
                     break
                 if tok.type == RFPLLexer.Unknown:
                     formatted.append(('class:error', tok.text))
-                elif tok.type == RFPLLexer.Comment:
+                elif tok.type == RFPLLexer.Comment or tok.type == RFPLLexer.String:
                     formatted.append(('class:comment', tok.text))
                 elif tok.type == RFPLLexer.Number or tok.text in ('!', '#', '@'):
                     formatted.append(('class:number', tok.text))
-                elif tok.text in ('Cn', 'Pr', 'Mn', 'S'):
+                elif tok.text in ('Cn', 'Pr', 'Mn', 'S', '#load'):
                     formatted.append(('class:keyword', tok.text))
                 else:
                     formatted.append(('class:text', tok.text))
@@ -95,9 +74,9 @@ def load(intr: Interpreter, filename: str, loaded=[]):
     if filename in loaded:
         return
     if filename == 'basics':
-        intr.load_basics()
+        names = intr.loadBasics()
         print('\033[32m', end='')
-        for func in ['Add', 'Sub', 'Mul', 'Pow', 'Get', 'Set', 'Int', 'List', 'Mod']:
+        for func in names:
             print(f' . Function {func} added')
         print('\033[0m', end=''if loaded else '\n')
         return

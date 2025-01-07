@@ -1,4 +1,4 @@
-load basics
+#load "basics"
 
 empty = #<>
 
@@ -53,3 +53,4 @@ filter =
     ]
 
 filter[!0](<6, 2, 0, 3, 4, 0, 1>)
+

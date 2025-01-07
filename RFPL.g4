@@ -1,9 +1,12 @@
 grammar RFPL;
 
 // Parser rules (start with lowercase)
-line          : define EOF
-              | examine EOF
-              | EOF ;
+singleline    : line? EOF ;
+line          : define
+              | examine
+              | pragma ;
+pragma        : load ;
+load          : '#load' String ;
 define        : Symbol '=' fexpr ;
 examine       : nexpr ;
 symbollist    : Symbol (',' Symbol)* ;
@@ -36,6 +39,7 @@ naturallist   : /* epsilon */
 // Lexer rules (start with uppercase)
 Number        : [0-9]+ ;
 Symbol        : [-a-zA-Z_][-a-zA-Z0-9_]* ;
+String        : '"' ( ~["\\] | '\\' ["'\\] )* '"' ;
 Whitespace    : [ \t\r\n]+ -> channel(HIDDEN) ;  // Skip whitespace
-Comment       : '/*' .*? '*/' -> channel(HIDDEN) ;
+Comment       : ';' ~[\n]* -> channel(HIDDEN) ;
 Unknown       : . ;
