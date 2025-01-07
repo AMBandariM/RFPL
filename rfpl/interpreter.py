@@ -8,6 +8,7 @@ from antlr4.error.Errors import ParseCancellationException
 from typing import Union, List
 import hashlib
 import random
+from enum import Enum
 
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
@@ -56,7 +57,7 @@ class SymbolTable:
 
 
 class HashCache:
-    CACHE = True
+    CACHE = False
 
     def __init__(self, basic_functions):
         self.basic_functions = basic_functions
@@ -114,24 +115,35 @@ class HashCache:
         return res
 
 
+class ResultType(Enum):
+    INFO = 0
+    NATURAL = 1
+    ERROR = 2
+    CRITICAL = 3
+
+
 @dataclass
-class InputError:
+class InterpretResult:
+    typ: ResultType
     message: str
+    context: List[str] = None
     start: int = None
     stop: int = None
 
-    def setContext(self, ctx: ParserRuleContext):
-        self.start = ctx.start.start
-        self.stop = ctx.stop.stop
-        return self
+    @classmethod
+    def withContext(cls, typ: ResultType, message: str, ctx: ParserRuleContext):
+        result = cls(typ, message)
+        result.start = ctx.start.start
+        result.stop = ctx.stop.stop
+        return result
 
-    def toString(self, stream: InputStream = None):
-        s = self.message + '\n'
+    def addContext(self, stream: InputStream):
         if self.start is None or self.stop is None or stream is None:
-            return s
-        s += '  ' + str(stream) + '\n'
-        s += '  ' + ' ' * self.start + '^' + '~' * max(0, self.stop - self.start) + '\n'
-        return s
+            return
+        self.context = [
+            str(stream),
+            ' ' * self.start + '^' + '~' * max(0, self.stop - self.start)
+        ]
 
 
 class ThrowingErrorListener(ErrorListener):
@@ -139,7 +151,9 @@ class ThrowingErrorListener(ErrorListener):
         self.interpreter = interpreter
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        self.interpreter.errors.append(InputError(f'ERROR: {msg}', offendingSymbol.start, offendingSymbol.stop))
+        result = InterpretResult(ResultType.ERROR, msg, start=offendingSymbol.start, stop=offendingSymbol.stop)
+        self.interpreter.errors.append(result)
+
 
 class QuietErrorListener(ErrorListener):
     def __init__(self):
@@ -233,7 +247,7 @@ class Interpreter:
         self.cache = HashCache(
             self.basic_arithmetic_enteries + self.basic_sequential_enteries + self.basic_numbertheory_enteries
         )
-        self.errors: List[InputError] = []
+        self.errors: List[InterpretResult] = []
 
     def loadList(self, lst: list):
         names = []
@@ -322,14 +336,18 @@ class Interpreter:
             symb = tree.Symbol().getText()
             syment = self.symbol_table.search(symb)
             if syment is None:
-                self.errors.append(InputError(
-                    message=f'ERROR: Function {symb} is not defined',
-                ).setContext(tree))
+                self.errors.append(InterpretResult.withContext(
+                    typ=ResultType.ERROR,
+                    message=f'Function {symb} is not defined',
+                    ctx=tree
+                ))
                 return basesz
             if len(base_nxt) != syment.basesz:
-                self.errors.append(InputError(
-                    message=f'ERROR: {symb} accepts {syment.basesz} bases but got {len(base_nxt)}'
-                ).setContext(tree))
+                self.errors.append(InterpretResult.withContext(
+                    typ=ResultType.ERROR,
+                    message=f'{symb} accepts {syment.basesz} bases but got {len(base_nxt)}',
+                    ctx=tree,
+                ))
                 return basesz
             tree.children.append(syment)
             tree.c_syment = syment  # custom attribute added to the tree
@@ -359,19 +377,19 @@ class Interpreter:
             raise Exception(f'Unknown node {type(tree)}')
         return basesz
     
-    def buildErrorMessage(self, input_stream):
-        msg = ''
+    def buildErrorResults(self, input_stream):
         for err in self.errors:
-            msg += err.toString(input_stream)
+            err.addContext(input_stream)
+        result = self.errors.copy()
         self.errors = []
-        return msg
+        return result
     
     def interpretString(self, text: str):
         return text[1:-1].replace('\\\\', '\\').replace('\\"', '"').replace('\\\'', '\'')
     
     def interpret(self, line: str):
         if self.errors: # precautionary check
-            return False, self.buildErrorMessage(None)
+            return False, self.buildErrorResults(None)
         try:
             input_stream = InputStream(line.strip())
             lexer = RFPLLexer(input_stream)
@@ -386,7 +404,7 @@ class Interpreter:
 
             tree = parser.singleline()
             if self.errors:
-                return False, self.buildErrorMessage(input_stream)
+                return False, self.buildErrorResults(input_stream)
 
             tree = tree.line()
             if tree is None:
@@ -397,7 +415,7 @@ class Interpreter:
                 fexpr = tree.fexpr()
                 basesz = self.preprocess(fexpr)
                 if self.errors:
-                    return False, self.buildErrorMessage(input_stream)
+                    return False, self.buildErrorResults(input_stream)
                 message = f'Function {symb} added'
                 syment = self.symbol_table.search(symb)
                 if syment is not None:
@@ -414,7 +432,7 @@ class Interpreter:
                 tree = tree.examine()
                 result = self.interpretNexpr(tree.nexpr())
                 if self.errors:
-                    return False, self.buildErrorMessage(input_stream)
+                    return False, self.buildErrorResults(input_stream)
                 return True, result
             elif tree.pragma() is not None:
                 tree = tree.pragma()
@@ -423,10 +441,10 @@ class Interpreter:
                     filename = self.interpretString(tree.String().getText())
                     ok, message = self.loadFile(filename)
                     if not ok:
-                        self.errors.append(InputError(
+                        self.errors.append(InterpretResult(
                             f'ERROR: Unable to load file {filename}'
                         ).setContext(tree))
-                        return False, message + self.buildErrorMessage(input_stream)
+                        return False, message + self.buildErrorResults(input_stream)
                     return True, message
                 else:
                     raise Exception(f'Unknown pragma {tree.getText()}')
