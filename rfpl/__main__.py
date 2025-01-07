@@ -44,22 +44,36 @@ def check_grammar(cmd, superc=True):
 
 
 custom_style = Style.from_dict({
-    'super': 'fg:magenta',
-    '': 'fg:white',
+    'keyword': 'fg:magenta',
+    'text': 'fg:white',
+    'comment': 'fg:green',
+    'error': 'fg:red',
+    'number': 'fg:orange',
 })
 
 class CustomLexer(Lexer):
     def lex_document(self, document):
         def get_line(lineno):
             line = document.lines[lineno]
-            tokens = []
-            parts = re.findall(r'\w+|[^\w\s]|\s', line)
-            for part in parts:
-                if part in ['Pr', 'Mn', 'Cn', 'S', '!', '#', '@']:
-                    tokens.append(('class:super', part))
+            input_stream = antlr4.InputStream(line)
+            lexer = RFPLLexer(input_stream)
+            lexer.removeErrorListeners()
+            formatted = []
+            while True:
+                tok = lexer.nextToken()
+                if tok.type == antlr4.Token.EOF:
+                    break
+                if tok.type == RFPLLexer.Unknown:
+                    formatted.append(('class:error', tok.text))
+                elif tok.type == RFPLLexer.Comment:
+                    formatted.append(('class:comment', tok.text))
+                elif tok.type == RFPLLexer.Number or tok.text in ('!', '#', '@'):
+                    formatted.append(('class:number', tok.text))
+                elif tok.text in ('Cn', 'Pr', 'Mn', 'S'):
+                    formatted.append(('class:keyword', tok.text))
                 else:
-                    tokens.append(('class:', part))
-            return tokens
+                    formatted.append(('class:text', tok.text))
+            return formatted
         return get_line
 
 session = PromptSession(lexer=CustomLexer(), style=custom_style)

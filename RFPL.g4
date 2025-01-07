@@ -36,5 +36,6 @@ naturallist   : /* epsilon */
 // Lexer rules (start with uppercase)
 Number        : [0-9]+ ;
 Symbol        : [-a-zA-Z_][-a-zA-Z0-9_]* ;
-Whitespace    : [ \t\r\n]+ -> skip ;  // Skip whitespace
-Comment       : '/*' .*? '*/' -> skip ;
+Whitespace    : [ \t\r\n]+ -> channel(HIDDEN) ;  // Skip whitespace
+Comment       : '/*' .*? '*/' -> channel(HIDDEN) ;
+Unknown       : . ;
