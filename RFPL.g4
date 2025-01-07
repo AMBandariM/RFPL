@@ -2,7 +2,8 @@ grammar RFPL;
 
 // Parser rules (start with lowercase)
 line          : define EOF
-              | examine EOF ;
+              | examine EOF
+              | EOF ;
 define        : Symbol '=' fexpr ;
 examine       : nexpr ;
 symbollist    : Symbol (',' Symbol)* ;
@@ -35,4 +36,5 @@ naturallist   : /* epsilon */
 // Lexer rules (start with uppercase)
 Number        : [0-9]+ ;
 Symbol        : [-a-zA-Z_][-a-zA-Z0-9_]* ;
-WS            : [ \t\r\n]+ -> skip ;  // Skip whitespace
+Whitespace    : [ \t\r\n]+ -> skip ;  // Skip whitespace
+Comment       : '/*' .*? '*/' -> skip ;

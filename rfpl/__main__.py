@@ -93,8 +93,6 @@ def load(intr: Interpreter, filename: str, loaded=[]):
             lines = f.readlines()
             cmd = ''
             for line in lines:
-                if line[0] == ';':
-                    continue
                 cmd += line.strip()
                 if not cmd:
                     continue
@@ -110,7 +108,7 @@ def load(intr: Interpreter, filename: str, loaded=[]):
                         print(f'\033[31m{result}\033[0m')
                     elif isinstance(result, Natural):
                         print(f'\033[33m = {result}\033[0m')
-                    else:
+                    elif result is not None:
                         print(f'\033[33m . {result}\033[0m')
                 cmd = ''
             print()
@@ -162,5 +160,5 @@ if __name__ == '__main__':
             print(f'\033[31m{result}\033[0m')
         elif isinstance(result, Natural):
             print(f'\033[33m = {result}\033[0m\n')
-        else:
+        elif result is not None:
             print(f'\033[33m . {result}\033[0m\n')

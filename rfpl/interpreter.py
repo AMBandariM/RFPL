@@ -359,7 +359,7 @@ class Interpreter:
             msg += err.toString(self.input_stream)
         return msg
 
-    def interpret(self, line:str):
+    def interpret(self, line: str):
         self.errors = []
         try:
             self.input_stream = InputStream(line.strip())
@@ -376,9 +376,9 @@ class Interpreter:
             tree = parser.line()
             if self.errors:
                 return False, self.buildErrorMessage()
-            
-            tree = tree.getChild(0)
-            if isinstance(tree, RFPLParser.DefineContext):
+
+            if tree.define() is not None:
+                tree = tree.define()
                 symb = tree.Symbol().getText()
                 fexpr = tree.fexpr()
                 basesz = self.preprocess(fexpr)
@@ -396,12 +396,13 @@ class Interpreter:
                     basesz = basesz
                 )
                 return True, message
-            elif isinstance(tree, RFPLParser.ExamineContext):
+            elif tree.examine() is not None:
+                tree = tree.examine()
                 result = self.interpretNexpr(tree.nexpr())
                 if self.errors:
                     return False, self.buildErrorMessage()
                 return True, result
             else:
-                raise Exception('Unknown node {}'.format(type(tree)))
+                return True, None
         except Exception as e:
             return False, f'CRITICAL: {traceback.format_exc()}'
