@@ -196,22 +196,26 @@ class Interpreter:
             SymbolEntry(
                 symbol='Add',
                 call=lambda _blist, args : args[0] + args[1],
-                builtin=True
+                builtin=True,
+                nargs=2
             ),
             SymbolEntry(
                 symbol='Sub',
                 call=lambda _blist, args : args[1] - args[0],
-                builtin=True
+                builtin=True,
+                nargs=2
             ),
             SymbolEntry(
                 symbol='Mul',
                 call=lambda _blist, args : args[0] * args[1],
-                builtin=True
+                builtin=True,
+                nargs=2
             ),
             SymbolEntry(
                 symbol='Pow',
                 call=lambda _blist, args : args[1] ** args[0],
-                builtin=True
+                builtin=True,
+                nargs=2
             )
         ]
         
@@ -238,22 +242,26 @@ class Interpreter:
             SymbolEntry(
                 symbol='Get',
                 call=_getEntry,
-                builtin=True
+                builtin=True,
+                nargs=2
             ),
             SymbolEntry(
                 symbol='Set',
                 call=_setEntry,
-                builtin=True
+                builtin=True,
+                nargs=3
             ),
             SymbolEntry(
                 symbol='Int',
                 call=_int,
-                builtin=True
+                builtin=True,
+                nargs=1
             ),
             SymbolEntry(
                 symbol='List',
                 call=_list,
-                builtin=True
+                builtin=True,
+                nargs=1
             ),
         ]
         self.basic_numbertheory_enteries = [
@@ -445,11 +453,11 @@ class Interpreter:
                 ))
                 return basesz, nargs, nargs_base_dependencies, max_narg_for_base
             
-            for i in nabd.keys():
+            for j in nabd.keys():
                 if j in max_narg_for_base.keys():
-                    max_narg_for_base[j] = min(max_narg_for_base[j], ngs - nabd[i])
+                    max_narg_for_base[j] = min(max_narg_for_base[j], ngs - nabd[j])
                 else:
-                    max_narg_for_base[j] = ngs - nabd[i]
+                    max_narg_for_base[j] = ngs - nabd[j]
                 if max_narg_for_base[j] < 0:
                     self.addMessage(Message.errorContext(
                         f'Some contradiction happend!',  ## I don't know what to say!
