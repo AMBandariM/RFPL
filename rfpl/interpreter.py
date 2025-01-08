@@ -5,9 +5,10 @@ from dataclasses import dataclass
 from typing import Callable
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
-from typing import Union, List
+from typing import Union, List, Tuple
 import hashlib
 import random
+from enum import Enum
 
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
@@ -56,7 +57,7 @@ class SymbolTable:
 
 
 class HashCache:
-    CACHE = True
+    CACHE = False
 
     def __init__(self, basic_functions):
         self.basic_functions = basic_functions
@@ -114,32 +115,62 @@ class HashCache:
         return res
 
 
+class MessageType(Enum):
+    INFO = 0
+    NATURAL = 1
+    ERROR = 2
+    EXCEPTION = 3
+
+
 @dataclass
-class InputError:
-    message: str
+class Message:
+    typ: MessageType
+    message: str = None
+    context: List[str] = None
+    natural: Natural = None
     start: int = None
     stop: int = None
 
-    def setContext(self, ctx: ParserRuleContext):
-        self.start = ctx.start.start
-        self.stop = ctx.stop.stop
-        return self
+    @classmethod
+    def error(cls, message: str, **kwargs):
+        return cls(typ=MessageType.ERROR, message=message, **kwargs)
 
-    def toString(self, stream: InputStream = None):
-        s = self.message + '\n'
-        if self.start is None or self.stop is None or stream is None:
-            return s
-        s += '  ' + str(stream) + '\n'
-        s += '  ' + ' ' * self.start + '^' + '~' * max(0, self.stop - self.start) + '\n'
-        return s
+    @classmethod
+    def errorContext(cls, message: str, ctx: Union[ParserRuleContext, Token]):
+        result = cls.error(message)
+        if isinstance(ctx, ParserRuleContext):
+            result.start = ctx.start.start
+            result.stop = ctx.stop.stop
+        else:
+            result.start = ctx.start
+            result.stop = ctx.stop
+        return result
+    
+    @classmethod
+    def info(cls, message: str, **kwargs):
+        return cls(typ=MessageType.INFO, message=message, *kwargs)
+    
+    @classmethod
+    def natural(cls, nat: Natural, **kwargs):
+        return cls(typ=MessageType.NATURAL, natural=nat, **kwargs)
+
+    def addContext(self, inp: str):
+        if (self.start is None or self.stop is None 
+            or inp is None or self.context is not None):
+            return
+        self.context = [
+            inp,
+            ' ' * self.start + '^' + '~' * max(0, self.stop - self.start)
+        ]
 
 
-class ThrowingErrorListener(ErrorListener):
+class ReportErrorListener(ErrorListener):
     def __init__(self, interpreter: 'Interpreter'):
         self.interpreter = interpreter
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        self.interpreter.errors.append(InputError(f'ERROR: {msg}', offendingSymbol.start, offendingSymbol.stop))
+        self.interpreter.addMessage(Message.errorContext(msg, offendingSymbol))
+
 
 class QuietErrorListener(ErrorListener):
     def __init__(self):
@@ -233,7 +264,13 @@ class Interpreter:
         self.cache = HashCache(
             self.basic_arithmetic_enteries + self.basic_sequential_enteries + self.basic_numbertheory_enteries
         )
-        self.errors: List[InputError] = []
+        self.messages: List[Message] = []
+        self.has_error = False
+
+    def addMessage(self, msg: Message):
+        self.messages.append(msg)
+        if msg.typ in (MessageType.ERROR, MessageType.EXCEPTION):
+            self.has_error = True
 
     def loadList(self, lst: list):
         names = []
@@ -306,7 +343,7 @@ class Interpreter:
         for nexpr in nexprlist.getTypedRuleContexts(RFPLParser.NexprContext):
             args.append(self.interpretNexpr(nexpr))
         self.preprocess(fexpr)
-        if self.errors:
+        if self.has_error:
             return Natural(None)
         args = NaturalList(args)
         return self.interpretFexpr(fexpr, None, args)
@@ -322,14 +359,13 @@ class Interpreter:
             symb = tree.Symbol().getText()
             syment = self.symbol_table.search(symb)
             if syment is None:
-                self.errors.append(InputError(
-                    message=f'ERROR: Function {symb} is not defined',
-                ).setContext(tree))
+                self.addMessage(Message.errorContext(f'Function {symb} is not defined', tree))
                 return basesz
             if len(base_nxt) != syment.basesz:
-                self.errors.append(InputError(
-                    message=f'ERROR: {symb} accepts {syment.basesz} bases but got {len(base_nxt)}'
-                ).setContext(tree))
+                self.addMessage(Message.errorContext(
+                    f'Function {symb} accepts {syment.basesz} bases but got {len(base_nxt)}',
+                    tree,
+                ))
                 return basesz
             tree.children.append(syment)
             tree.c_syment = syment  # custom attribute added to the tree
@@ -359,83 +395,73 @@ class Interpreter:
             raise Exception(f'Unknown node {type(tree)}')
         return basesz
     
-    def buildErrorMessage(self, input_stream):
-        msg = ''
-        for err in self.errors:
-            msg += err.toString(input_stream)
-        self.errors = []
-        return msg
-    
     def interpretString(self, text: str):
         return text[1:-1].replace('\\\\', '\\').replace('\\"', '"').replace('\\\'', '\'')
     
-    def interpret(self, line: str):
-        if self.errors: # precautionary check
-            return False, self.buildErrorMessage(None)
-        try:
-            input_stream = InputStream(line.strip())
-            lexer = RFPLLexer(input_stream)
-            lexer.removeErrorListeners()
-            lexer.addErrorListener(ThrowingErrorListener(self))
+    def interpret(self, line: str) -> bool:
+        self.has_error = False
 
-            token_stream = CommonTokenStream(lexer)
+        input_stream = InputStream(line)
+        lexer = RFPLLexer(input_stream)
+        lexer.removeErrorListeners()
+        lexer.addErrorListener(ReportErrorListener(self))
 
-            parser = RFPLParser(token_stream)
-            parser.removeErrorListeners()
-            parser.addErrorListener(ThrowingErrorListener(self))
+        token_stream = CommonTokenStream(lexer)
 
-            tree = parser.singleline()
-            if self.errors:
-                return False, self.buildErrorMessage(input_stream)
+        parser = RFPLParser(token_stream)
+        parser.removeErrorListeners()
+        parser.addErrorListener(ReportErrorListener(self))
 
-            tree = tree.line()
-            if tree is None:
-                return True, None
-            elif tree.define() is not None:
-                tree = tree.define()
-                symb = tree.Symbol().getText()
-                fexpr = tree.fexpr()
-                basesz = self.preprocess(fexpr)
-                if self.errors:
-                    return False, self.buildErrorMessage(input_stream)
-                message = f'Function {symb} added'
-                syment = self.symbol_table.search(symb)
-                if syment is not None:
-                    if syment.builtin:
-                        return False, f'ERROR: Cannot redefine a builtin function {symb}'
-                    message = f'Function {symb} redefined'
-                self.symbol_table.add(
-                    symbol=symb,
-                    call=lambda blist, args, fexpr=fexpr: self.interpretFexpr(fexpr, blist, args),
-                    basesz = basesz
-                )
-                return True, message
-            elif tree.examine() is not None:
-                tree = tree.examine()
-                result = self.interpretNexpr(tree.nexpr())
-                if self.errors:
-                    return False, self.buildErrorMessage(input_stream)
-                return True, result
-            elif tree.pragma() is not None:
-                tree = tree.pragma()
-                if tree.load() is not None:
-                    tree = tree.load()
-                    filename = self.interpretString(tree.String().getText())
-                    ok, message = self.loadFile(filename)
-                    if not ok:
-                        self.errors.append(InputError(
-                            f'ERROR: Unable to load file {filename}'
-                        ).setContext(tree))
-                        return False, message + self.buildErrorMessage(input_stream)
-                    return True, message
-                else:
-                    raise Exception(f'Unknown pragma {tree.getText()}')
+        tree = parser.singleline()
+        if self.has_error:
+            return False
+
+        tree = tree.line()
+        if tree is None:
+            return True, None
+        elif tree.define() is not None:
+            tree = tree.define()
+            symb = tree.Symbol().getText()
+            fexpr = tree.fexpr()
+            basesz = self.preprocess(fexpr)
+            if self.has_error:
+                return False
+            msg = Message.info(f'Function {symb} added')
+            syment = self.symbol_table.search(symb)
+            if syment is not None:
+                if syment.builtin:
+                    self.addMessage(Message.errorContext(
+                        f'Cannot redefine a builtin function {symb}',
+                        tree.Symbol()
+                    ))
+                    return False
+                msg.message = f'Function {symb} redefined'
+            self.symbol_table.add(
+                symbol=symb,
+                call=lambda blist, args, fexpr=fexpr: self.interpretFexpr(fexpr, blist, args),
+                basesz = basesz
+            )
+            self.addMessage(msg)
+            return True
+        elif tree.examine() is not None:
+            tree = tree.examine()
+            result = self.interpretNexpr(tree.nexpr())
+            if self.has_error:
+                return False
+            self.addMessage(Message.natural(result))
+            return True
+        elif tree.pragma() is not None:
+            tree = tree.pragma()
+            if tree.load() is not None:
+                tree = tree.load()
+                filename = self.interpretString(tree.String().getText())
+                return self.loadFile(filename)
             else:
-                raise Exception(f'Unknown tree type {tree.getText()}')
-        except Exception as e:
-            return False, f'CRITICAL: {traceback.format_exc()}'
+                raise Exception(f'Unknown pragma {tree.getText()}')
+        else:
+            raise Exception(f'Unknown tree type {tree.getText()}')
         
-    def parsable(self, text: str):
+    def parsable(self, text: str) -> bool:
         input_stream = InputStream(text)
         lexer = RFPLLexer(input_stream)
         stream = CommonTokenStream(lexer)
@@ -448,24 +474,49 @@ class Interpreter:
         parser.singleline()
         return not error_listener.has_unexpected_eof
         
-    def loadFile(self, filename: str):
+    def loadFile(self, filename: str) -> bool:
         if filename == 'basics':
             names = self.loadBasics()
-            return True, 'Basic functions added: ' + ', '.join(names)
+            self.addMessage(Message.info(
+                'Basic functions added: ' + ', '.join(names)
+            ))
+            return True 
+        try:
+            file = open(filename, 'r')
+        except OSError as e:
+            self.addMessage(Message.error(f'Unable to open "{filename}": ' + e.strerror))
+            return False
         ok = True
-        message = ''
-        with open(filename, 'r') as file:
+        with file:
             lines = file.readlines()
             cmd = ''
             for line in lines:
                 cmd += line.strip() + ' '
                 if not self.parsable(cmd):
                     continue
-                cmdok, cmdresult = self.interpret(cmd)
+                cmdok, _ = self.report(cmd, clear=False)
                 if not cmdok:
                     ok = False
-                    message += cmdresult
                 cmd = ''
-        if ok:
-            message = f'File {filename} loaded'
-        return ok, message
+        self.addMessage(Message.info(
+            f'File "{filename}" loaded'
+        ))
+        return ok
+
+    def report(self, line: str, clear: bool = True) -> Tuple[bool, List[Message]]:
+        line = line.strip()
+        try:
+            ok = self.interpret(line)
+        except Exception:
+            self.messages.append(Message(
+                typ=MessageType.EXCEPTION,
+                message=traceback.format_exc().strip()
+            ))
+            ok = False
+        for msg in self.messages:
+            msg.addContext(line)
+        if clear:
+            result = self.messages.copy()
+            self.messages = []
+            return ok, result
+        return ok, self.messages

@@ -1,23 +1,22 @@
-from prompt_toolkit import PromptSession
+from prompt_toolkit import PromptSession, ANSI
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.styles import Style
 import re
-from .interpreter import Interpreter
-from .natural import Natural
 import os
-
+from prompt_toolkit import print_formatted_text as print
 import antlr4
 from antlr4.error.ErrorListener import ErrorListener
+
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
+from .interpreter import Interpreter, Message, MessageType
+from .natural import Natural
 
 
 def check_grammar(cmd, superc=True):
     if superc and re.match(r'^\s*(exit|finish|end|list|save\s+[\w/\-]+)\s*$', cmd):
-        return True
-    if re.match(r'^\s*load\s+[\w/\-]+\s*$', cmd):
         return True
     return intr.parsable(cmd)
 
@@ -29,6 +28,13 @@ custom_style = Style.from_dict({
     'error': 'fg:red',
     'number': 'fg:orange',
 })
+
+
+C_GREEN = '\033[32m'
+C_ORANGE = '\033[33m'
+C_RED = '\033[31m'
+C_RESET = '\033[0m'
+
 
 class CustomLexer(Lexer):
     def lex_document(self, document):
@@ -55,7 +61,10 @@ class CustomLexer(Lexer):
             return formatted
         return get_line
 
+
 session = PromptSession(lexer=CustomLexer(), style=custom_style)
+
+
 def multiline_input():
     cmd = ''
     fst = True
@@ -70,53 +79,16 @@ def multiline_input():
                 break
     return cmd
 
-def load(intr: Interpreter, filename: str, loaded=[]):
-    if filename in loaded:
-        return
-    if filename == 'basics':
-        names = intr.loadBasics()
-        print('\033[32m', end='')
-        for func in names:
-            print(f' . Function {func} added')
-        print('\033[0m', end=''if loaded else '\n')
-        return
-    filename += '.rfpl'
-    try:
-        with open(filename, 'r') as f:
-            lines = f.readlines()
-            cmd = ''
-            for line in lines:
-                cmd += line.strip()
-                if not cmd:
-                    continue
-                cmd += ' '
-                if not check_grammar(cmd, superc=False):
-                    continue
-                mtch = re.match(r'^\s*load\s+(?P<FILE>[\w/\-]+)\s*$', cmd)
-                if mtch:
-                    load(intr, mtch.group('FILE'), loaded + [filename])
-                else:
-                    ok, result = intr.interpret(cmd)
-                    if not ok:
-                        print(f'\033[31m{result}\033[0m')
-                    elif isinstance(result, Natural):
-                        print(f'\033[33m = {result}\033[0m')
-                    elif result is not None:
-                        print(f'\033[33m . {result}\033[0m')
-                cmd = ''
-            print()
-    except Exception as e:
-        print(f'\033[31mcouldn\'nt open {filename}\033[0m\n')
 
 hist = ''
 def save(filename:str):
     filename += '.rfpl'
     if os.path.exists(filename):
-        print('\033[31msorry, this file exists.\033[0m\n')
+        print(f'{C_RED}sorry, this file exists.{C_RESET}\n')
     else:
         with open(filename, 'w') as f:
             f.write(hist)
-            print(f'   \033[33msaved on {filename}\033[0m\n')
+            print(f'   {C_GREEN}saved on {filename}{C_RESET}\n')
 
 if __name__ == '__main__':
     intr = Interpreter()
@@ -130,28 +102,30 @@ if __name__ == '__main__':
         if re.match(r'^\s*(exit|finish|end)\s*$', line):
             break
         if re.match(r'list', line):
-            print('\033[33m..', end='')
             out = []
             outstr = ''
             for fun in intr.symbol_table.table[::-1]:
                 if fun.symbol != 'S' and fun.symbol not in out:
                     outstr = ' ' + fun.symbol + (f'[{fun.basesz}]' if fun.basesz else '') + outstr
                     out.append(fun.symbol)
-            print(f'{outstr}\033[0m\n')
-            continue
-        mtch = re.match(r'^\s*load\s+(?P<FILE>[\w/\-]+)\s*$', line)
-        if mtch:
-            load(intr, mtch.group('FILE'))
+            print(ANSI(f'{C_ORANGE}..{outstr}{C_RESET}\n'))
             continue
         mtch = re.match(r'^\s*save\s+(?P<FILE>[\w/\-]+)\s*$', line)
         if mtch:
             save(mtch.group('FILE'))
             continue
         hist += line.strip() + '\n\n'
-        ok, result = intr.interpret(line)
-        if not ok:
-            print(f'\033[31m{result}\033[0m')
-        elif isinstance(result, Natural):
-            print(f'\033[33m = {result}\033[0m\n')
-        elif result is not None:
-            print(f'\033[33m . {result}\033[0m\n')
+        ok, messages = intr.report(line)
+        for msg in messages:
+            if msg.typ == MessageType.NATURAL:
+                print(ANSI(f' {C_GREEN}= {msg.natural}{C_RESET}'))
+            elif msg.typ == MessageType.INFO:
+                print(ANSI(f' {C_ORANGE}. {msg.message}{C_RESET}'))
+            elif msg.typ == MessageType.ERROR:
+                print(ANSI(f' {C_RED}! ERROR:{C_RESET} {msg.message}'))
+                if msg.context:
+                    for ctx in msg.context:
+                        print(' '*7 + ctx)
+            elif msg.typ == MessageType.EXCEPTION:
+                print(ANSI(f' {C_RED}* EXCEPTION: {msg.message}{C_RESET}'))
+        print()
