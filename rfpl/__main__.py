@@ -18,8 +18,6 @@ from .natural import Natural
 def check_grammar(cmd, superc=True):
     if superc and re.match(r'^\s*(exit|finish|end|list|save\s+[\w/\-]+)\s*$', cmd):
         return True
-    if re.match(r'^\s*load\s+[\w/\-]+\s*$', cmd):
-        return True
     return intr.parsable(cmd)
 
 
