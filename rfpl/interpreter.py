@@ -484,8 +484,12 @@ class Interpreter:
         try:
             file = open(filename, 'r')
         except OSError as e:
-            self.addMessage(Message.error(f'Unable to open "{filename}": ' + e.strerror))
-            return False
+            try:
+                file = open(filename + '.rfpl', 'r')
+                filename += '.rfpl'
+            except OSError as e:
+                self.addMessage(Message.error(f'Unable to open "{filename}": ' + e.strerror))
+                return False
         ok = True
         with file:
             lines = file.readlines()
