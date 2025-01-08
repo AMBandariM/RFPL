@@ -1,11 +1,10 @@
 import sys
 import traceback
 from antlr4 import *
-from dataclasses import dataclass
-from typing import Callable
+from dataclasses import dataclass, field
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
-from typing import Union, List, Tuple
+from typing import Union, List, Dict, Tuple, Callable
 import hashlib
 import random
 from enum import Enum
@@ -34,6 +33,9 @@ class SymbolEntry:
     builtin: bool = False
     ix: int = -1
     basesz: int = 0
+    nargs: int = 0
+    nargs_base_dependencies: Dict = field(default_factory=dict)
+    max_narg_for_base: Dict = field(default_factory=dict)
 
 
 class SymbolTable:
@@ -342,7 +344,17 @@ class Interpreter:
         args = []
         for nexpr in nexprlist.getTypedRuleContexts(RFPLParser.NexprContext):
             args.append(self.interpretNexpr(nexpr))
-        self.preprocess(fexpr)
+        bs, na, _, _ = self.preprocess(fexpr)
+        if bs > 0:
+            self.addMessage(Message.errorContext(
+                f'the function shouldn\'t need any bases!',
+                tree,
+            ))
+        elif na > len(args):
+            self.addMessage(Message.errorContext(
+                f'the function excepts {na} arguments but got {len(args)}',
+                tree,
+            ))
         if self.has_error:
             return Natural(None)
         args = NaturalList(args)
@@ -350,6 +362,10 @@ class Interpreter:
 
     def preprocess(self, tree):
         basesz = 0
+        nargs = 0
+        nargs_base_dependencies = {}
+        max_narg_for_base = {}   ## for example, Cn[@0,#0] indicates that @0 shouldn't need more than one arguments! 
+
         tree = tree.getChild(0)
         if isinstance(tree, RFPLParser.FexprleafContext):
             base_nxt = []
@@ -360,40 +376,151 @@ class Interpreter:
             syment = self.symbol_table.search(symb)
             if syment is None:
                 self.addMessage(Message.errorContext(f'Function {symb} is not defined', tree))
-                return basesz
+                return basesz, nargs, nargs_base_dependencies, max_narg_for_base
             if len(base_nxt) != syment.basesz:
                 self.addMessage(Message.errorContext(
                     f'Function {symb} accepts {syment.basesz} bases but got {len(base_nxt)}',
                     tree,
                 ))
-                return basesz
-            tree.children.append(syment)
+                return basesz, nargs, nargs_base_dependencies, max_narg_for_base
+            # tree.children.append(syment)     ## so, do we need this? TODO 
             tree.c_syment = syment  # custom attribute added to the tree
-            for b in base_nxt:
-                basesz = max(basesz, self.preprocess(b))
+            nargs = max(nargs, syment.nargs)
+            for i, b in enumerate(base_nxt):
+                bs, na, nabd, mnab = self.preprocess(b)
+                if i in syment.max_narg_for_base.keys():
+                    if na > syment.max_narg_for_base[i]:
+                        self.addMessage(Message.errorContext(
+                            f'Base no. {i+1} of function {syment.symbol} should get at most {syment.max_narg_for_base[i]} ' + 
+                            f'arguments but got {na}',
+                            tree,
+                        ))
+                        return basesz, nargs, nargs_base_dependencies, max_narg_for_base
+                    for j in nabd.keys():
+                        if j in max_narg_for_base.keys():
+                            max_narg_for_base[j] = min(max_narg_for_base[j], syment.max_narg_for_base[i] - nabd[j])
+                        else:
+                            max_narg_for_base[j] = syment.max_narg_for_base[i] - nabd[j]
+                        if max_narg_for_base[j] < 0:
+                            self.addMessage(Message.errorContext(
+                                f'Some contradiction happend!',  ## I don't know what to say!
+                                tree,
+                            ))
+                            return basesz, nargs, nargs_base_dependencies, max_narg_for_base
+                if i in syment.nargs_base_dependencies.keys():
+                    dff = syment.nargs_base_dependencies[i]
+                    nargs = max(nargs, dff + na)
+                    for j in nabd.keys():
+                        if j in nargs_base_dependencies.keys():
+                            nargs_base_dependencies[j] = max(nargs_base_dependencies[j], dff + nabd[j])
+                        else:
+                            nargs_base_dependencies[j] = dff + nabd[j]
+                for j in mnab.keys():
+                    if j in max_narg_for_base.keys():
+                        max_narg_for_base[j] = min(max_narg_for_base[j], mnab[j])
+                    else:
+                        max_narg_for_base[j] = mnab[j]
+                basesz = max(basesz, bs)
         elif isinstance(tree, RFPLParser.BracketContext):
-            tree.c_number = int(tree.Number().getText() )
-            basesz = max(basesz, tree.c_number + 1)
+            tree.c_number = int(tree.Number().getText())
+            nargs_base_dependencies[tree.c_number] = 0
+            basesz = tree.c_number + 1
         elif isinstance(tree, RFPLParser.IdentityContext):
             tree.c_number = int(tree.Number().getText())
+            nargs = tree.c_number + 1
         elif isinstance(tree, RFPLParser.ConstantContext):
             tree.c_natural = Natural.interpret(tree.natural())
         elif isinstance(tree, RFPLParser.BuiltinCnContext):
             f, *gs = tree.fexprlist().getTypedRuleContexts(RFPLParser.FexprContext)
+            bs, na, nabd, mnab = self.preprocess(f)
+            for i in mnab.keys():
+                max_narg_for_base[i] = mnab[i]
+            basesz = bs
+
+            ngs = len(gs)
+            if ngs < na:
+                self.addMessage(Message.errorContext(
+                    f'Function {f.getText()} needs at least {na} arguments but got {ngs}',
+                    tree,
+                ))
+                return basesz, nargs, nargs_base_dependencies, max_narg_for_base
+            
+            for i in nabd.keys():
+                if j in max_narg_for_base.keys():
+                    max_narg_for_base[j] = min(max_narg_for_base[j], ngs - nabd[i])
+                else:
+                    max_narg_for_base[j] = ngs - nabd[i]
+                if max_narg_for_base[j] < 0:
+                    self.addMessage(Message.errorContext(
+                        f'Some contradiction happend!',  ## I don't know what to say!
+                        tree,
+                    ))
+                    return basesz, nargs, nargs_base_dependencies, max_narg_for_base
+            
             for g in gs:
-                basesz = max(basesz, self.preprocess(g))
-            basesz = max(basesz, self.preprocess(f))
+                bs, na, nabd, mnab = self.preprocess(g)
+                nargs = max(nargs, na)
+                for i in nabd.keys():
+                    if i in nargs_base_dependencies.keys():
+                        nargs_base_dependencies[i] = max(nargs_base_dependencies[i], nabd[i])
+                    else:
+                        nargs_base_dependencies[i] = nabd[i]
+                for i in mnab.keys():
+                    if i in max_narg_for_base.keys():
+                        max_narg_for_base[i] = min(max_narg_for_base[i], mnab[i])
+                    else:
+                        max_narg_for_base[i] = mnab[i]
+                basesz = max(basesz, bs)
+            
         elif isinstance(tree, RFPLParser.BuiltinPrContext):
             f = tree.fexpr(0)
             g = tree.fexpr(1)
-            basesz = max(basesz, self.preprocess(f))
-            basesz = max(basesz, self.preprocess(g))
+            bs, na, nabd, mnab = self.preprocess(f)
+            nargs = max(nargs, na + 1)
+            for i in nabd.keys():
+                if i in nargs_base_dependencies.keys():
+                    nargs_base_dependencies[i] = max(nargs_base_dependencies[i], nabd[i] + 1)
+                else:
+                    nargs_base_dependencies[i] = nabd[i] + 1
+            for i in mnab.keys():
+                if i in max_narg_for_base.keys():
+                    max_narg_for_base[i] = min(max_narg_for_base[i], mnab[i])
+                else:
+                    max_narg_for_base[i] = mnab[i]
+            basesz = max(basesz, bs)
+
+            bs, na, nabd, mnab = self.preprocess(g)
+            nargs = max(nargs, na - 1)
+            for i in nabd.keys():
+                if i in nargs_base_dependencies.keys():
+                    nargs_base_dependencies[i] = max(nargs_base_dependencies[i], nabd[i] + 1)
+                else:
+                    nargs_base_dependencies[i] = nabd[i] - 1
+            for i in mnab.keys():
+                if i in max_narg_for_base.keys():
+                    max_narg_for_base[i] = min(max_narg_for_base[i], mnab[i])
+                else:
+                    max_narg_for_base[i] = mnab[i]
+            basesz = max(basesz, bs)
+
         elif isinstance(tree, RFPLParser.BuiltinMnContext):
             f = tree.fexpr()
-            basesz = max(basesz, self.preprocess(f))
+            bs, na, nabd, mnab = self.preprocess(f)
+            nargs = max(nargs, na - 1)
+            for i in nabd.keys():
+                if i in nargs_base_dependencies.keys():
+                    nargs_base_dependencies[i] = max(nargs_base_dependencies[i], nabd[i] + 1)
+                else:
+                    nargs_base_dependencies[i] = nabd[i] - 1
+            for i in mnab.keys():
+                if i in max_narg_for_base.keys():
+                    max_narg_for_base[i] = min(max_narg_for_base[i], mnab[i])
+                else:
+                    max_narg_for_base[i] = mnab[i]
+            basesz = max(basesz, bs)
         else:
             raise Exception(f'Unknown node {type(tree)}')
-        return basesz
+        return basesz, nargs, nargs_base_dependencies, max_narg_for_base
     
     def interpretString(self, text: str):
         return text[1:-1].replace('\\\\', '\\').replace('\\"', '"').replace('\\\'', '\'')
@@ -423,7 +550,7 @@ class Interpreter:
             tree = tree.define()
             symb = tree.Symbol().getText()
             fexpr = tree.fexpr()
-            basesz = self.preprocess(fexpr)
+            basesz, nargs, nargs_base_dependencies, max_narg_for_base = self.preprocess(fexpr)
             if self.has_error:
                 return False
             msg = Message.info(f'Function {symb} added')
@@ -439,7 +566,10 @@ class Interpreter:
             self.symbol_table.add(
                 symbol=symb,
                 call=lambda blist, args, fexpr=fexpr: self.interpretFexpr(fexpr, blist, args),
-                basesz = basesz
+                basesz = basesz,
+                nargs = nargs,
+                nargs_base_dependencies = nargs_base_dependencies,
+                max_narg_for_base = max_narg_for_base
             )
             self.addMessage(msg)
             return True

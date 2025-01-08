@@ -1,3 +1,4 @@
 TODO:
-+ check before insert 2 func_table
-- hashcache
++ preprocess minimum number of arguments.
+- choose a better hash, array form Naturals are unhappy.
+- make a journey program.

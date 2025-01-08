@@ -106,7 +106,7 @@ if __name__ == '__main__':
             outstr = ''
             for fun in intr.symbol_table.table[::-1]:
                 if fun.symbol != 'S' and fun.symbol not in out:
-                    outstr = ' ' + fun.symbol + (f'[{fun.basesz}]' if fun.basesz else '') + outstr
+                    outstr = ' ' + fun.symbol + (f'[{fun.basesz}]' if fun.basesz else f'({fun.nargs})') + outstr
                     out.append(fun.symbol)
             print(ANSI(f'{C_ORANGE}..{outstr}{C_RESET}\n'))
             continue
@@ -122,10 +122,10 @@ if __name__ == '__main__':
             elif msg.typ == MessageType.INFO:
                 print(ANSI(f' {C_ORANGE}. {msg.message}{C_RESET}'))
             elif msg.typ == MessageType.ERROR:
-                print(ANSI(f' {C_RED}! ERROR:{C_RESET} {msg.message}'))
+                print(ANSI(f' {C_RED}! ERROR: {msg.message}{C_RESET}'))
                 if msg.context:
                     for ctx in msg.context:
-                        print(' '*7 + ctx)
+                        print(ANSI(C_RED + ' '*7 + ctx + C_RESET))
             elif msg.typ == MessageType.EXCEPTION:
                 print(ANSI(f' {C_RED}* EXCEPTION: {msg.message}{C_RESET}'))
         print()
