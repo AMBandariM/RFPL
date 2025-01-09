@@ -1,0 +1,51 @@
+[
+    {
+        "type": "userguide",
+        "prerequisites": [],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "Hello there! Welcome to The RFPL Journey!"
+            },
+            {
+                "type": "typewriter",
+                "content": "We are going to learn about Recursive Functions and this Programming Language!"
+            },
+            {
+                "type": "typewriter",
+                "content": "May I ask your name?"
+            },
+            {
+                "type": "getusername"
+            },
+            {
+                "type": "print",
+                "content": "Greate! Let's go to a warmup challenge! write [challenge01] to start the challenge and write [hint] if you meed some!"
+            }
+            
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge01",
+        "prerequisites": [0],
+        "target": "x+y",
+        "tests": [
+            [0,0],
+            [1,2],
+            [10,3],
+            [12,5],
+            [0,13],
+            [17,0],
+            [19,19],
+            [22,13],
+            [23,17],
+            [99,27]
+        ],
+        "limits":["bracket", "Mn", "list", "load"],
+        "hints": [
+            "Use 'Pr'.",
+            "Assume x be zero, what would x+y be? Exactly! y."
+        ]
+    }
+]

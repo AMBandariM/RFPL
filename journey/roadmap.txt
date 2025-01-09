@@ -1,0 +1,9 @@
+[character] :: greetings, congraduations
+
+[intuition] :: RF=TM, numbers=list
+
+[userguide] :: how to use RFPL, syntax and ...
+
+[sidenotes] :: notes, for restudy
+
+[challenge] :: problem and hints
