@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
 from typing import Union, List, Dict, Tuple, Callable
-import hashlib
 import random
 from enum import Enum
 
@@ -72,12 +71,10 @@ class HashCache:
         lst = ''
         started = False
         for arg in args.content[::-1]:
-            iii = arg.toInt()
-            if iii:
+            if not arg.isZero():
                 started = True
-            iii %= 600851475143
             if started:
-                lst += str(iii) + '-'
+                lst += arg.weirdHash() + '+'
         return hashlib.md5(lst.encode()).hexdigest()
 
     def makeMockNaturalList(self, n: int):
@@ -98,16 +95,16 @@ class HashCache:
         if hsh in self.cache[fun.ix].keys():
             return self.cache[fun.ix][hsh]
         res = fun.call(blist, args)
-        intres = res.toInt()
+        reshsh = res.weirdHash()
         for ent in self.possibleMatches[fun.ix]:
             rel = ent.call(blist, args)
-            if rel.toInt() != intres:
+            if rel.weirdHash() != reshsh:
                 self.possibleMatches[fun.ix].remove(ent)
         mocknatlst = self.makeMockNaturalList(self.counter[fun.ix])
         for ent in self.possibleMatches[fun.ix]:
             rel = ent.call(None, mocknatlst)
             rez = fun.call(None, mocknatlst)
-            if rel.toInt() != rez.toInt():
+            if rel.weirdHash() != rez.weirdHash():
                 self.possibleMatches[fun.ix].remove(ent)
         if len(self.possibleMatches[fun.ix]):
             self.counter[fun.ix] += 1

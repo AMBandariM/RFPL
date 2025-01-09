@@ -1,4 +1,5 @@
 from typing import Union, List
+import hashlib
 from .RFPLParser import RFPLParser
 
 primes = [2, 3, 5, 7]
@@ -177,6 +178,15 @@ class Natural:
         for ent in self.__natural:
             subreps.append(ent.__str__())
         return '<{}>'.format(', '.join(subreps))
+
+    def weirdHash(self):
+        lst = ''
+        if isinstance(self.__natural, int):
+            lst += str(self.__natural) + '+'
+        if isinstance(self.__natural, list):
+            for nat in self.__natural:
+                lst += nat.weirdHash() + '+'
+        hashlib.md5(lst.encode()).hexdigest()
 
 
 class NaturalList:

@@ -7,7 +7,7 @@ from rfpl.interpreter import Interpreter
 from rfpl.RFPLLexer import RFPLLexer
 from rfpl.RFPLParser import RFPLParser
 from rfpl.interpreter import Interpreter, Message, MessageType
-from rfpl.natural import Natural
+from rfpl.natural import Natural, NaturalList
 
 from abc import ABC, abstractmethod
 import re
@@ -19,7 +19,7 @@ import antlr4
 
 intr = None
 def check_grammar(cmd, superc=True):
-    if superc and re.match(r'^\s*(end|done|list)\s*$', cmd):
+    if superc and re.match(r'^\s*(end|done|list|hint)\s*$', cmd):
         return True
     return intr.parsable(cmd)
 
@@ -159,6 +159,12 @@ class UserGuide(Act):
         self.done = True
 
 
+challengeFunctions = {
+    'x+y': {
+        'func': lambda args : args[0] + args[1],
+        'nargs': 2
+    },
+}
 class Challenge(Act):
     def __init__(self, journey, starter: str, prerequisites: List[Act], target: str,
                  tests: list, limits: List[str], hints: List[str]):
@@ -171,6 +177,29 @@ class Challenge(Act):
 
     def crosslimit(self, line):
         return False
+
+    def test(self):
+        global intr
+        syment = intr.symbol_table.table[-1]
+        target = challengeFunctions[self.target]
+        if syment.nargs != target['nargs']:
+            typewriter(f'\'{self.target}\' gets {target['nargs']} arguments but \'{syment.symbol}\' gets {syment.nargs} arguments!')
+            return False
+        if syment.basesz > 0:
+            typewriter(f'\'{syment.symbol}\' is not a finished function.')
+            return False
+        for test in self.tests:
+            args = []
+            for numb in test:
+                args.append(Natural(numb))
+            args = NaturalList(args)
+            expected = challengeFunctions[self.target]['func'](args)
+            actual = syment.call([], args)
+            if expected.weirdHash() != actual.weirdHash():
+                typewriter(f'Oh, it\'s not working with input ({', '.join([str(n) for n in test])})')
+                return False
+        typewriter(f'Congraduations!')
+        return True
 
     def run(self):
         typewriter(f'{len(self.hints)} [hint]s, type [done] when you are. type [list] to see all functions you\'ve made.')
@@ -185,7 +214,15 @@ class Challenge(Act):
                 self.hintcounter = 0
                 return
             if re.match(r'^\s*done\s*$', line):
-                print('ok assume it\'s been tested!') ###################
+                if self.test():
+                    break
+                continue
+            if re.match(r'^\s*hint\s*$', line):
+                if self.hintcounter >= len(self.hints):
+                    typewriter('There is no more hint!')
+                else:
+                    typewriter(f'[Hint {self.hintcounter + 1}/{len(self.hints)}] {self.hints[self.hintcounter]}')
+                    self.hintcounter += 1
                 continue
             if re.match(r'^\s*list\s*$', line):
                 out = []
