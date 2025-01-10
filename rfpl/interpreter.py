@@ -187,7 +187,8 @@ class Interpreter:
         self.symbol_table.add(
             symbol='S', 
             call=lambda _blist, args : args[0].succ(), 
-            builtin=True
+            builtin=True,
+            nargs=1
         )
         self.basic_arithmetic_enteries = [
             SymbolEntry(
@@ -596,7 +597,7 @@ class Interpreter:
         else:
             raise Exception(f'Unknown tree type {tree.getText()}')
         
-    def parsable(self, text: str) -> bool:
+    def parsable(self, text: str):
         input_stream = InputStream(text)
         lexer = RFPLLexer(input_stream)
         stream = CommonTokenStream(lexer)
@@ -606,8 +607,8 @@ class Interpreter:
         lexer.addErrorListener(error_listener)
         parser.removeErrorListeners()
         parser.addErrorListener(error_listener)
-        parser.singleline()
-        return not error_listener.has_unexpected_eof
+        tree = parser.singleline()
+        return not error_listener.has_unexpected_eof, tree
         
     def loadFile(self, filename: str) -> bool:
         if filename == 'basics':
@@ -631,7 +632,7 @@ class Interpreter:
             cmd = ''
             for line in lines:
                 cmd += line.strip() + ' '
-                if not self.parsable(cmd):
+                if not self.parsable(cmd)[0]:
                     continue
                 cmdok, _ = self.report(cmd, clear=False)
                 if not cmdok:

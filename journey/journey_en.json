@@ -5,47 +5,118 @@
         "jobs": [
             {
                 "type": "typewriter",
-                "content": "Hello there! Welcome to The RFPL Journey!"
-            },
-            {
-                "type": "typewriter",
-                "content": "We are going to learn about Recursive Functions and this Programming Language!"
-            },
-            {
-                "type": "typewriter",
-                "content": "May I ask your name?"
+                "content": "Hello there! Welcome to The RFPL Journey!\nWe are going to learn about Recursive Functions and this Programming Language!\nMay I ask Your Name?",
+                "highlights": ["The RFPL Journey", "Your Name"]
             },
             {
                 "type": "getusername"
             },
             {
+                "type": "typewriter",
+                "content": "Greate! Let's start our journey!\nIn RFPL, we just have (non-negative) numbers and functions on them!\nActually, we are interested on constructing (complex) functions using our fundamental (ingredient) functions!",
+                "highlights": ["RFPL", "fundamental"]
+            },
+            {
+                "type": "typewriter",
+                "content": "But what are these fundamental functions?\nMaybe the most trivial functions be Constant functions, they wouldn't listen to any inputs and just return a fix number!\nIn RFPL, we show these functions by `#` (sharp), for example #3 is a function that return 3 no matter what people say!",
+                "highlights": ["#3", " 3", "RFPL", "Constant", "`#`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Next trivial functions are Identity functions, they wouldn't think and just return (one of) their input(s)!\nwe show these functions by `!` (bang), for example !0 returns its first (0-based indexing) input!\nSee these examples:",
+                "highlights": ["RFPL", "Identity", "`!`", "!0", "first"]
+            },
+            {
                 "type": "print",
-                "content": "Greate! Let's go to a warmup challenge! write [challenge01] to start the challenge and write [hint] if you meed some!"
+                "content": "#2(1) = 2, #7(3, 4, 5) = 7, !0(1, 3) = 1, !2(3, 4, 5) = 5"
+            },
+            {
+                "type": "typewriter",
+                "content": "But, what we can construct using Constant and Identity functions?\nEvery composition(?) of these functions would be ether Constant or Identity :(\nSo let me intoduce you function `S` (S stands for Successor).\nThis function returns next number after its (first) input:",
+                "highlights": ["composition", "`S`"]
+            },
+            {
+                "type": "print",
+                "content": "S(0) = 1, S(S(2)) = 4, S(1, 13) = 2, S(9, 2, 4) = 10"
+            },
+            {
+                "type": "typewriter",
+                "content": "Now, go and `play-around` a little bit and make yourself comfortable.",
+                "highlights": ["`play-around`"]
             }
-            
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "play-around",
+        "prerequisites": [0],
+        "target": "",
+        "banner": "Test what you've learned.\nFor example write down `S(!1(S(2), S(3)))` and check if the result is as expected.\nWrite `done` when you finished playing. Enjoy!",
+        "tests": [],
+        "limits": ["define", "load", "bracket", "builtinCn", "builtinPr", "builtinMn", "naturallist"],
+        "hints": []
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [1],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "Yes, that palying-around was cool, but there were no new functions! Just new values!\nWe said we are interested in constructing (complex) fucntions!\nSo let's define new functions using `=` (big surprise!).\nFor example `a = S` means `a` is a function performing exactly like `S`.",
+                "highlights": ["new functions", "exactly", "`=`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Previously, we tried `S(S(2))` which was 2+2. How can we define a new function x+2?\n`b = S(S)` might seem cool at the first thought, but RFPL doesn't think so.\n`a(x) = S(x)` makes sense but `b(x) = S(S)(x)`? It's weird.\nPlus, we don't like parentheses when we're defining functions, they're for calling them.",
+                "highlights": ["RFPL", "parentheses"]
+            },
+            {
+                "type": "typewriter",
+                "content": "So what we gonna do? It's time to introduce another fundamental function: `Cn` (Cn stands for Composition).\nThis function gets functions and makes another one! Let's see some example:",
+                "highlights": ["`Cn`", "Composition", "gets functions"]
+            },
+            {
+                "type": "print",
+                "content": "a = Cn[f, g, h] -> a(x, y, z) = f(g(x, y, z), h(x, y, z))\na = Cn[b, !1, !0] -> a(x,y) = b(y,x)\na = Cn[S, S] -> a(x) = x + 2"
+            },
+            {
+                "type": "typewriter",
+                "content": "You probably got the idea. `Cn` can get any (>= 1) number of functions like `Cn[f,g_0,...,g_k]`.\nThe first function is a little bit special. When we call function `Cn[f,g_0,...,g_k]` with some inputs,\nthose inputs would be gave to `g_i` functions and the outputs (of `g_i`s) would be inputs of `f`\nand the output of `f` is our final output!",
+                "highlights": ["special", "inputs", "outputs", "final output"]
+            },
+            {
+                "type": "typewriter",
+                "content": "For constructing `f = S(!1(S(x), S(y)))` we have:",
+                "highlights": []
+            },
+            {
+                "type": "print",
+                "content": "f = Cn[S, Cn[!1, Cn[S, !0], Cn[S, !1]]]"
+            },
+            {
+                "type": "typewriter",
+                "content": "Let's practice what we learned.",
+                "highlights": ["practice"]
+            }
         ]
     },
     {
         "type": "challenge",
         "starter": "challenge01",
-        "prerequisites": [0],
-        "target": "x+y",
+        "prerequisites": [2],
+        "target": "z+3",
+        "banner": "In this challenge you have to make a function like `f(x, y, z) = z + 3`\nYou have 2 hints in this challenge, you can get them by typing `hint`\nAfter constructing (defining) the target function, type `done` to finish the challenge.\nYou can type `list` to see all functions you've defined and `end` to exit the challenge.",
         "tests": [
-            [0,0],
-            [1,2],
-            [10,3],
-            [12,5],
-            [0,13],
-            [17,0],
-            [19,19],
-            [22,13],
-            [23,17],
-            [99,27]
+            [0,0,3],
+            [1,2,4],
+            [10,3,5],
+            [12,5,8],
+            [0,13,9]
         ],
-        "limits":["bracket", "Mn", "list", "load"],
+        "limits": ["load", "bracket", "builtinPr", "builtinMn", "naturallist"],
         "hints": [
-            "Use 'Pr'.",
-            "Assume x be zero, what would x+y be? Exactly! y."
+            "You can first make `x+3` and then put `z` in its `x` using a `Cn`\nNext hint is the full answer. Try not to use it.",
+            "Cn[Cn[S, Cn[S, S]], !2]"
         ]
     }
 ]

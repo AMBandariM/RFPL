@@ -1,4 +1,5 @@
 import sys
+import shutil
 import time
 import random
 import json
@@ -16,12 +17,15 @@ from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.styles import Style
 import antlr4
+from antlr4.ParserRuleContext import ParserRuleContext
 
-intr = None
+intr, lastTree = None, None
 def check_grammar(cmd, superc=True):
     if superc and re.match(r'^\s*(end|done|list|hint)\s*$', cmd):
         return True
-    return intr.parsable(cmd)
+    global lastTree
+    res, lastTree = intr.parsable(cmd)
+    return res
 
 
 custom_style = Style.from_dict({
@@ -37,6 +41,7 @@ C_GREEN = '\033[32m'
 C_BLUE = '\033[34m'
 C_ORANGE = '\033[33m'
 C_RED = '\033[31m'
+C_GREY = '\033[90m'
 C_RESET = '\033[0m'
 
 
@@ -83,11 +88,14 @@ def multiline_input():
                 break
     return cmd
 
-def typewriter(text):
+def typewriter(text, highlights=[], end='\n'):
     lines = text.split('\n')
     fst = True
+    print(C_BLUE, end='', flush=True)
     for line in lines:
-        print(f'{C_BLUE})) ' if fst else f'{C_BLUE})  ', end='', flush=True)
+        for highlight in highlights:
+            line = line.replace(highlight, C_ORANGE + highlight + C_BLUE)
+        print(f')) ' if fst else f')  ', end='', flush=True)
         fst = False
         for char in line:
             print(char, end='', flush=True)
@@ -102,7 +110,7 @@ def typewriter(text):
                 time.sleep(random.uniform(0.02, 0.08))
         print()
         time.sleep(random.uniform(0.06, 0.12))
-    print(C_RESET, end='', flush=True)
+    print(C_RESET, end=end, flush=True)
 
 
 
@@ -114,12 +122,34 @@ class SideNotes:
     
     def __init__(self):
         self.notes: List['Note'] = []
+        self.session = PromptSession()
 
     def addNote(self, title, content):
-        self.notes.append(Note(title, content))
+        self.notes.append(self.Note(title, content))
+
+    def printNote(self, index):
+        print('#'*5 + ' ' + self.notes[index].title + ' ' + '#'*5)
+        print(self.notes[index].content)
+        print()
 
     def run(self):
-        pass
+        if len(self.notes) == 0:
+            print(f'{C_GREY}There is no note!{C_RESET}\n')
+            return
+        while True:
+            print(f'{C_GREY}// Choose a note by number or [end]')
+            for i, note in enumerate(self.notes):
+                print(f'{i:2d} {note.title}')
+            print(f'{len(self.notes):2d} end{C_RESET}\n')
+            cmd = self.session.prompt('?? ').strip()
+            if cmd == 'end' or cmd == str(len(self.notes)):
+                print()
+                return
+            try:
+                cmd = int(cmd)
+                self.printNote(cmd)
+            except ValueError:
+                pass
 
 
 class Act(ABC):
@@ -147,19 +177,36 @@ class UserGuide(Act):
     def __init__(self, journey, prerequisites: List[Act], jobs: list):
         super().__init__(journey, 'talk', prerequisites)
         self.jobs = jobs
+        self.session = PromptSession()
 
     def run(self):
         for job in self.jobs:
             if job['type'] == 'typewriter':
-                typewriter(job['content'])
-            if job['type'] == 'print':
-                print(job['content'])
+                highlights = job['highlights'] if 'highlights' in job.keys() else []
+                typewriter(job['content'], highlights=highlights)
+            elif job['type'] == 'print':
+                ncols, _ = shutil.get_terminal_size()
+                lines = job['content'].split('\n')
+                for line in lines:
+                    print(' ' * ((ncols - len(line)) // 2) + line)
+                print()
             elif job['type'] == 'getusername':
-                self.journey.username = input('>> ')
+                self.journey.username = self.session.prompt('>> ')
+                print()
+            elif job['type'] == 'sidenote':
+                journey.sidenotes.addNote(title=job['title'], content=job['content'])
         self.done = True
 
 
 challengeFunctions = {
+    '': {
+        'func': lambda args : args[0],
+        'nargs': 1
+    },
+    'z+3': {
+        'func': lambda args : args[2] + Natural(3),
+        'nargs': 3
+    },
     'x+y': {
         'func': lambda args : args[0] + args[1],
         'nargs': 2
@@ -167,15 +214,33 @@ challengeFunctions = {
 }
 class Challenge(Act):
     def __init__(self, journey, starter: str, prerequisites: List[Act], target: str,
-                 tests: list, limits: List[str], hints: List[str]):
+                 tests: list, limits: List[str], hints: List[str], banner: str):
         super().__init__(journey, starter, prerequisites)
         self.target: str = target
         self.tests: list = tests
         self.limits: List[str] = limits
         self.hints: List[str] = hints
         self.hintcounter: int = 0
+        self.banner = banner
 
-    def crosslimit(self, line):
+    def collectUsedRules(self, tree, usedRules):
+        if isinstance(tree, ParserRuleContext):
+            rule_name = tree.parser.ruleNames[tree.getRuleIndex()]
+            usedRules.add(rule_name)
+        for i in range(tree.getChildCount()):
+            child = tree.getChild(i)
+            self.collectUsedRules(child, usedRules)
+
+    def crosslimit(self):
+        translate = {'define': '=', 'bracket': '@', 'naturallist': '< >', 'builtinCn': 'Cn', 'builtinPr': 'Pr', 'builtinMn': 'Mn'}
+        usedRules = set()
+        self.collectUsedRules(lastTree, usedRules)
+        for element in usedRules:
+            if element in self.limits:
+                if element in translate.keys():
+                    element = translate[element]
+                typewriter(f'Using \'{element}\' is forbidden here.')
+                return True
         return False
 
     def test(self):
@@ -198,11 +263,11 @@ class Challenge(Act):
             if expected.weirdHash() != actual.weirdHash():
                 typewriter(f'Oh, it\'s not working with input ({', '.join([str(n) for n in test])})')
                 return False
-        typewriter(f'Congraduations!')
+        typewriter(f'Congraduations!' if self.target else 'Good.')
         return True
 
     def run(self):
-        typewriter(f'{len(self.hints)} [hint]s, type [done] when you are. type [list] to see all functions you\'ve made.')
+        typewriter(self.banner)
         global intr
         intr = Interpreter()
         hist = ''
@@ -212,6 +277,7 @@ class Challenge(Act):
                 continue
             if re.match(r'^\s*end\s*$', line):
                 self.hintcounter = 0
+                print()
                 return
             if re.match(r'^\s*done\s*$', line):
                 if self.test():
@@ -233,15 +299,15 @@ class Challenge(Act):
                         out.append(fun.symbol)
                 print(f'{C_ORANGE}..{outstr}{C_RESET}\n')
                 continue
-            if self.crosslimit(line):
+            if self.crosslimit():
                 continue
-            hist += line.strip().replace(' ', '').replace('=', ' = ') + '\n'
             ok, messages = intr.report(line)
             for msg in messages:
                 if msg.typ == MessageType.NATURAL:
                     print(f' {C_GREEN}= {msg.natural}{C_RESET}')
                 elif msg.typ == MessageType.INFO:
                     print(f' {C_ORANGE}. {msg.message}{C_RESET}')
+                    hist += line.strip().replace(' ', '').replace('=', ' = ').replace(',', ', ') + '\n'
                 elif msg.typ == MessageType.ERROR:
                     print(f' {C_RED}! ERROR: {msg.message}{C_RESET}')
                     if msg.context:
@@ -250,7 +316,8 @@ class Challenge(Act):
                 elif msg.typ == MessageType.EXCEPTION:
                     print(f' {C_RED}* EXCEPTION: {msg.message}{C_RESET}')
             print()
-
+        if self.target:
+            self.journey.sidenotes.addNote(title=f'{self.starter}::solution ({self.target})', content=hist.strip())
         self.done = True
 
 
@@ -272,8 +339,9 @@ class Journey:
                     for req in act['prerequisites']:
                         prerequisites.append(self.acts[req])
                     self.acts.append(
-                        Challenge(self, act['starter'], prerequisites, act['target'], act['tests'], act['limits'], act['hints'])
+                        Challenge(self, act['starter'], prerequisites, act['target'], act['tests'], act['limits'], act['hints'], act['banner'])
                     )
+        self.session = PromptSession()
 
     def run(self):
         running = True
@@ -285,11 +353,16 @@ class Journey:
                     runnables_starters.append(act.starter)
                     runnables[act.starter] = act
             while True:
-                typewriter('Chose an option:')
+                typewriter('Chose an option:', end='')
                 for starter in runnables_starters:
-                    print(f'- {starter}')
-                print('- end')
-                cmd = input('>> ')
+                    part1 = f' - {starter}' + ' '*20
+                    part2 = runnables[starter].target if isinstance(runnables[starter], Challenge) else ''
+                    print(part1[:20] + f'{C_GREY}{part2}{C_RESET}')
+                print(f' - notes            {C_GREY}to see notes{C_RESET}\n' +
+                      f' - end              {C_GREY}to end this journey{C_RESET}\n')
+                cmd = self.session.prompt('$$ ')
+                if cmd == 'notes':
+                    self.sidenotes.run()
                 if cmd == 'end':
                     running = False
                     break
