@@ -205,5 +205,10 @@
         "limits": ["load", "bracket", "builtinMn", "naturallist"],
         "have": ["Add"],
         "hints": ["First, construct `mul`."]
+    },
+    {
+        "type": "writer-contact",
+        "fullname": "AmirMohammad Bandari Masoole",
+        "email": "random@gmail.com"
     }
 ]

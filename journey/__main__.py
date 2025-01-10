@@ -336,6 +336,7 @@ class Journey:
         self.username: str = ''
         self.sidenotes: SideNotes = SideNotes()
         self.acts: List[Act] = []
+        self.writerContact = None
         with open(jsonfilepath) as file:
             data = json.load(file)
             for act in data:
@@ -351,6 +352,8 @@ class Journey:
                     self.acts.append(
                         Challenge(self, act['starter'], prerequisites, act['target'], act['tests'], act['limits'], act['have'], act['hints'], act['banner'])
                     )
+                elif act['type'] == 'writer-contact':
+                    self.writerContact = {'fullname': act['fullname'], 'email': act['email']}
         self.session = PromptSession()
 
     def run(self):
@@ -369,14 +372,24 @@ class Journey:
                     part2 = runnables[starter].target if isinstance(runnables[starter], Challenge) else ''
                     print(part1[:20] + f'{C_GREY}{part2}{C_RESET}')
                 print(f' - notes            {C_GREY}to see notes{C_RESET}\n' +
+                      f' - contact          {C_GREY}to see our contact information{C_RESET}\n'
                       f' - end              {C_GREY}to end this journey{C_RESET}\n')
                 cmd = self.session.prompt('$$ ')
                 if cmd == 'notes':
                     self.sidenotes.run()
-                if cmd == 'end':
+                elif cmd == 'contact':
+                    typewriter('RFPL core team:\n' +
+                               '  Parsa Alizadeh [parsa@gmail.com]\n' +
+                               '  AmirMohammad Bandari Masoole [doctor@gmail.com]',
+                               highlights=['parsa@gmail.com', 'doctor@gmail.com'])
+                    if self.writerContact and self.writerContact['email'] not in ['parsa@gmail.com', 'doctor@gmail.com']:
+                        typewriter('Language support:\n' +
+                                  f'  {self.writerContact['fullname']} [{self.writerContact['email']}]',
+                                  highlights=[self.writerContact['email']])
+                elif cmd == 'end':
                     running = False
                     break
-                if cmd in runnables_starters:
+                elif cmd in runnables_starters:
                     break
             if cmd in runnables_starters:
                 runnables[cmd].run()
