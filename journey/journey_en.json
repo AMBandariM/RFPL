@@ -137,8 +137,8 @@
         "jobs": [
             {
                 "type": "typewriter",
-                "content": "`Cn` helped us a lot for playing with inputs, outputs, and their arrengement.\nBut, we are still weak. How can we construct a function that depends on two of its inputs?\n`S`, `!`, and `#` care about atmost one of their inputs.\nTherefore, any composition of them would, practically, care about atmost one input.\nSo, we wouldn't be able of constructing functions like `x+y`!",
-                "highlights": ["arrengement", "depends", "practically", "`x+y`"]
+                "content": "`Cn` helped us a lot for playing with inputs, outputs, and their arrangement.\nBut, we are still weak. How can we construct a function that depends on two of its inputs?\n`S`, `!`, and `#` care about atmost one of their inputs.\nTherefore, any composition of them would, practically, care about atmost one input.\nSo, we wouldn't be able of constructing functions like `x+y`!",
+                "highlights": ["arrangement", "depends", "practically", "`x+y`"]
             },
             {
                 "type": "typewriter",
@@ -206,6 +206,186 @@
         "have": ["Add"],
         "hints": ["First, construct `mul`."]
     },
+    {
+        "type": "challenge",
+        "starter": "challenge04",
+        "prerequisites": [5,6],
+        "target": "y-x",
+        "banner": "In this challenge we are going to construct substraction function.\nBut wait! We don't have negative numbers!\nThat's OK, we just consider negative results as `0`, for example `2 - 5 = 0`.\n`sub(x, y) = max(y - x, 0)`, note that it's not `x - y`! You have 2 hints.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "tests": [
+            [1,3],
+            [5,1],
+            [0,0],
+            [3,10],
+            [7,0]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": [],
+        "hints": [
+            "First, construct `sub1(x) = max(x - 1, 0)`",
+            "Note that f = Pr[g, h] means f(x+1) = h(?, x)!"
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge05",
+        "prerequisites": [7],
+        "target": "|x-y|",
+        "banner": "Compute the difference between `x` and `y`, `abs(2, 7) = abs(7, 2) = 5`.\nYou can use `Sub` without defining it.\nKeys: `list`, `done`, and `end`.",
+        "tests": [
+            [2,7],
+            [7,2],
+            [0,0],
+            [9,1],
+            [7,15]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": ["Sub"],
+        "hints": []
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [8],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "Cool! Now we have `Add`, `Mul`, `Pow`, `Sub`, and `Abs`!\nBoolian functions like `And`, `Or`, and `Not` are fairly easy to construct,\nso we assume you could make them whenever you want to.",
+                "highlights": ["`Add`", "`Mul`", "`Pow`", "`Sub`", "`Abs`", "`And`", "`Or`", "`Not`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Let's go for a bigger fish!",
+                "highlights": ["bigger fish"]
+            }
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge06",
+        "prerequisites": [9],
+        "target": "y/x",
+        "banner": "Task is pretty straight forward, implement integer division: `5 / 2 = 2, 101 / 7 = 14`\nYou can assume `x > 0` and return whatever you want in case of `x = 0`.\nThere is 3 hints and you can use `Add`, `Mul`, and `Sub` without defining them.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "tests": [
+            [2,5],
+            [7,101],
+            [2,0],
+            [3,70],
+            [7,15]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": ["Add", "Mul", "Sub"],
+        "hints": [
+            "This challenge is a little bit hard. Spend more time on it.",
+            "`k = y / x` is the biggest integer such that `k * x <= y`\n Or, it is kinda number of such integers!",
+            "make a function `I(k, x, y) = 1 if k * x <= y else 0` and add this `I` for `k = 1, 2, ..., ?`"
+        ]
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [10],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "Great Job! Now you can construct `Log` function using similar trick.",
+                "highlights": ["`Log`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Let't make some useful functions in Number Theory.",
+                "highlights": ["Number Theory"]
+            }
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge07",
+        "prerequisites": [11],
+        "target": "x%y",
+        "banner": "Implement `x%y`, you can assume `y>0` and return anything when `y=0`.\nYou can use `Add`, `Mul`, and `Sub` without defining them.\nKeys: `list`, `done`, and `end`.",
+        "tests": [
+            [4,11],
+            [101,7],
+            [2,1],
+            [7,2],
+            [70,15]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": ["Add", "Mul", "Sub"],
+        "hints": [
+            "This challenge is a little bit hard. Spend more time on it.",
+            "`k = y / x` is the biggest integer such that `k * x <= y`\n Or, it is kinda number of such integers!",
+            "make a function `I(k, x, y) = 1 if k * x <= y else 0` and add this `I` for `k = 1, 2, ..., ?`"
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge08",
+        "prerequisites": [11],
+        "target": "GCD",
+        "banner": "Copmute Greatest Common Divisor of `x` and `y`, you can assume `x + y > 0`\nYou have 1 hint and you can use `Add`, `Mul`, `Sub`, and `Mod` without defining them.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "tests": [
+            [12,7],
+            [1,33],
+            [21,0],
+            [0,21],
+            [12,4],
+            [7,35]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": ["Add", "Mul", "Sub", "Mod"],
+        "hints": [
+            "That trick in making `div` is not useful here,\nbut you can compute `max int s.t. something` in another way, too."
+        ]
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [12,13],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "That trick in `GCD` can be helpful in making other functions.\nYou can compute `v_p(x)` which is maximum `k` such that `p^k | x` (divises).",
+                "highlights": ["`v_p(x)`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Let's go for an other Idea!",
+                "highlights": []
+            }
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge08",
+        "prerequisites": [14],
+        "target": "fib",
+        "banner": "Fibonacci sequence is 1, 1, 2, 3, 5, ... and `f(n+1) = f(n) + f(n-1)`.\nYou have 3 hints and you can use `Add`, `Mul`, `Sub`, and `Mod` without defining them.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "tests": [
+            [0],
+            [1],
+            [2],
+            [3],
+            [4]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": ["Add", "Mul", "Sub", "Mod"],
+        "hints": [
+            "`fib` can't compute its result knowing just the previous member in sequence.\nBut you can compute `fib(n+2),fib(n+1)` knowing `fib(n+1),fib(n)`.\nHow can we return a `Touple` instead of an `Integer`?",
+            "We have to pack our outputs and unpack inputs that we know are packed!",
+            "use `2^x * 3^y` for packing `x,y` and use `v_2` and `v_3` for unpacking!"
+        ]
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [15],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "Thank you for following! We are developing this Journey...",
+                "highlights": ["Journey"]
+            }
+        ]
+    },
+
     {
         "type": "writer-contact",
         "fullname": "AmirMohammad Bandari Masoole",

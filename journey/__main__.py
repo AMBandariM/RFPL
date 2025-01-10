@@ -202,6 +202,18 @@ class UserGuide(Act):
         self.done = True
 
 
+def __gcd(a: int, b: int)->int:
+    if a == 0:
+        return b
+    if b == 0:
+        return a
+    return __gcd(min(a, b), max(a, b) % min(a, b))
+
+def __fib(n: int)->int:
+    if a < 2:
+        return 1
+    return __fib(n-1) + __fib(n-2)
+
 challengeFunctions = {
     '': {
         'func': lambda args : args[0],
@@ -219,6 +231,27 @@ challengeFunctions = {
         'func': lambda args : args[1] ** args[0],
         'nargs': 2
     },
+    'y-x': {
+        'func': lambda args : args[1] - args[0],
+        'nargs': 2
+    },
+    'y/x': {
+        'func': lambda args : Natural(args[1].toInt() // args[0].toInt()),
+        'nargs': 2
+    },
+    'x%y': {
+        'func': lambda args : args[0] % args[1],
+        'nargs': 2
+    },
+    'GCD': {
+        'func': lambda args : Natural(__gcd(args[0].toInt(), args[1].toInt())),
+        'nargs': 2
+    },
+    'fib': {
+        'func': lambda args : Natural(__fib(args[0].toInt())),
+        'nargs': 2
+    },
+    
 }
 class Challenge(Act):
     def __init__(self, journey, starter: str, prerequisites: List[Act], target: str,
@@ -269,7 +302,7 @@ class Challenge(Act):
             args = NaturalList(args)
             expected = challengeFunctions[self.target]['func'](args)
             actual = syment.call([], args)
-            if expected.weirdHash() != actual.weirdHash():
+            if expected.toInt() != actual.toInt():
                 typewriter(f'Oh, it\'s not working with input ({', '.join([str(n) for n in test])})')
                 return False
         typewriter(f'Congraduations!' if self.target else 'Good.')

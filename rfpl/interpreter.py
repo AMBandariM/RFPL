@@ -288,7 +288,7 @@ class Interpreter:
 
     def loadBasics(self):
         names = [name for name in self.allBuitinFunctions]
-        self.loadList[names]
+        self.loadList(names)
         return names
 
     def interpretFexpr(self, tree, blist: BaseList, args: NaturalList) -> Natural:
