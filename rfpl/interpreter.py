@@ -59,7 +59,7 @@ class SymbolTable:
 
 
 class HashCache:
-    CACHE = True
+    CACHE = False
 
     def __init__(self, basic_functions):
         self.basic_functions = basic_functions
