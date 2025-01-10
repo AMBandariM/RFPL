@@ -125,6 +125,10 @@ class SideNotes:
         self.session = PromptSession()
 
     def addNote(self, title, content):
+        for note in self.notes:
+            if note.title == title:
+                note.content += '\n' + content
+                return
         self.notes.append(self.Note(title, content))
 
     def printNote(self, index):
@@ -194,7 +198,7 @@ class UserGuide(Act):
                 self.journey.username = self.session.prompt('>> ')
                 print()
             elif job['type'] == 'sidenote':
-                journey.sidenotes.addNote(title=job['title'], content=job['content'])
+                self.journey.sidenotes.addNote(title=job['title'], content=job['content'])
         self.done = True
 
 
@@ -211,15 +215,20 @@ challengeFunctions = {
         'func': lambda args : args[0] + args[1],
         'nargs': 2
     },
+    'y^x': {
+        'func': lambda args : args[1] ** args[0],
+        'nargs': 2
+    },
 }
 class Challenge(Act):
     def __init__(self, journey, starter: str, prerequisites: List[Act], target: str,
-                 tests: list, limits: List[str], hints: List[str], banner: str):
+                 tests: list, limits: List[str], have: List[str], hints: List[str], banner: str):
         super().__init__(journey, starter, prerequisites)
         self.target: str = target
         self.tests: list = tests
         self.limits: List[str] = limits
         self.hints: List[str] = hints
+        self.have: List[str] = have
         self.hintcounter: int = 0
         self.banner = banner
 
@@ -270,6 +279,7 @@ class Challenge(Act):
         typewriter(self.banner)
         global intr
         intr = Interpreter()
+        intr.loadList(self.have)
         hist = ''
         while True:
             line = multiline_input()
@@ -285,7 +295,7 @@ class Challenge(Act):
                 continue
             if re.match(r'^\s*hint\s*$', line):
                 if self.hintcounter >= len(self.hints):
-                    typewriter('There is no more hint!')
+                    typewriter('There is no more hint!' if self.hintcounter else 'There is no hint.')
                 else:
                     typewriter(f'[Hint {self.hintcounter + 1}/{len(self.hints)}] {self.hints[self.hintcounter]}')
                     self.hintcounter += 1
@@ -339,7 +349,7 @@ class Journey:
                     for req in act['prerequisites']:
                         prerequisites.append(self.acts[req])
                     self.acts.append(
-                        Challenge(self, act['starter'], prerequisites, act['target'], act['tests'], act['limits'], act['hints'], act['banner'])
+                        Challenge(self, act['starter'], prerequisites, act['target'], act['tests'], act['limits'], act['have'], act['hints'], act['banner'])
                     )
         self.session = PromptSession()
 
@@ -370,7 +380,6 @@ class Journey:
                     break
             if cmd in runnables_starters:
                 runnables[cmd].run()
-
 
 jrny = Journey('./journey/journey_en.json')
 jrny.run()

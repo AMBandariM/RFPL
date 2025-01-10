@@ -193,32 +193,6 @@ class Interpreter:
             builtin=True,
             nargs=1
         )
-        self.basic_arithmetic_enteries = [
-            SymbolEntry(
-                symbol='Add',
-                call=lambda _blist, args : args[0] + args[1],
-                builtin=True,
-                nargs=2
-            ),
-            SymbolEntry(
-                symbol='Sub',
-                call=lambda _blist, args : args[1] - args[0],
-                builtin=True,
-                nargs=2
-            ),
-            SymbolEntry(
-                symbol='Mul',
-                call=lambda _blist, args : args[0] * args[1],
-                builtin=True,
-                nargs=2
-            ),
-            SymbolEntry(
-                symbol='Pow',
-                call=lambda _blist, args : args[1] ** args[0],
-                builtin=True,
-                nargs=2
-            )
-        ]
         
         def _getEntry(_blist, args):
             if args[1].isZero():
@@ -239,41 +213,66 @@ class Interpreter:
                 args[0].factor()
             return args[0]
         
-        self.basic_sequential_enteries = [
-            SymbolEntry(
+        self.allBuitinFunctions = {
+            "Add": SymbolEntry(
+                symbol='Add',
+                call=lambda _blist, args : args[0] + args[1],
+                builtin=True,
+                nargs=2
+            ),
+            "Sub": SymbolEntry(
+                symbol='Sub',
+                call=lambda _blist, args : args[1] - args[0],
+                builtin=True,
+                nargs=2
+            ),
+            "Mul": SymbolEntry(
+                symbol='Mul',
+                call=lambda _blist, args : args[0] * args[1],
+                builtin=True,
+                nargs=2
+            ),
+            "Pow": SymbolEntry(
+                symbol='Pow',
+                call=lambda _blist, args : args[1] ** args[0],
+                builtin=True,
+                nargs=2
+            ),
+            "Get": SymbolEntry(
                 symbol='Get',
                 call=_getEntry,
                 builtin=True,
                 nargs=2
             ),
-            SymbolEntry(
+            "Set": SymbolEntry(
                 symbol='Set',
                 call=_setEntry,
                 builtin=True,
                 nargs=3
             ),
-            SymbolEntry(
+            "Int": SymbolEntry(
                 symbol='Int',
                 call=_int,
                 builtin=True,
                 nargs=1
             ),
-            SymbolEntry(
+            "List": SymbolEntry(
                 symbol='List',
                 call=_list,
                 builtin=True,
                 nargs=1
             ),
-        ]
-        self.basic_numbertheory_enteries = [
-            SymbolEntry(
+            "Mod": SymbolEntry(
                 symbol='Mod',
                 call=lambda _blist, args : args[0] % args[1],
                 builtin=True
             ),
-        ]
+        }
+        self.basic_arithmetic_enteries = []
+        self.basic_sequential_enteries = []
+        self.basic_numbertheory_enteries = []
         self.cache = HashCache(
-            self.basic_arithmetic_enteries + self.basic_sequential_enteries + self.basic_numbertheory_enteries
+            [self.allBuitinFunctions[name] for name in ["Add", "Sub", "Mul", "Pow", "Get", "Set", "Mod"]]
         )
         self.messages: List[Message] = []
         self.has_error = False
@@ -283,18 +282,13 @@ class Interpreter:
         if msg.typ in (MessageType.ERROR, MessageType.EXCEPTION):
             self.has_error = True
 
-    def loadList(self, lst: list):
-        names = []
-        for ent in lst:
-            self.symbol_table.addEntry(ent)
-            names.append(ent.symbol)
-        return names
+    def loadList(self, names: List[str]):
+        for name in names:
+            self.symbol_table.addEntry(self.allBuitinFunctions[name])
 
     def loadBasics(self):
-        names = []
-        names += self.loadList(self.basic_arithmetic_enteries)
-        names += self.loadList(self.basic_sequential_enteries)
-        names += self.loadList(self.basic_numbertheory_enteries)
+        names = [name for name in self.allBuitinFunctions]
+        self.loadList[names]
         return names
 
     def interpretFexpr(self, tree, blist: BaseList, args: NaturalList) -> Natural:

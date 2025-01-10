@@ -18,7 +18,7 @@
             },
             {
                 "type": "typewriter",
-                "content": "But what are these fundamental functions?\nMaybe the most trivial functions be Constant functions, they wouldn't listen to any inputs and just return a fix number!\nIn RFPL, we show these functions by `#` (sharp), for example #3 is a function that return 3 no matter what people say!",
+                "content": "But what are these fundamental functions?\nMaybe the most trivial functions be Constant functions, they wouldn't listen to any inputs and just return a fix number!\nIn RFPL, we show these functions by `#` (sharp), for example #3 is a function that returns 3 no matter what people say!",
                 "highlights": ["#3", " 3", "RFPL", "Constant", "`#`"]
             },
             {
@@ -28,7 +28,7 @@
             },
             {
                 "type": "print",
-                "content": "#2(1) = 2, #7(3, 4, 5) = 7, !0(1, 3) = 1, !2(3, 4, 5) = 5"
+                "content": "#2(1, 8) = 2, #7() = 7, !0(1, 3) = 1, !2(3, 4, 5) = 5"
             },
             {
                 "type": "typewriter",
@@ -43,6 +43,11 @@
                 "type": "typewriter",
                 "content": "Now, go and `play-around` a little bit and make yourself comfortable.",
                 "highlights": ["`play-around`"]
+            },
+            {
+                "type": "sidenote",
+                "title": "fundamental",
+                "content": "`#n` is Constant n: `#2(1, 8) = 2, #7() = 7`\n`!n` is Identity, returning (n+1)-th input: `!0(1, 3) = 1, !2(3, 4, 5) = 5`\n`S` is Successor: `S(0) = 1, S(S(2)) = 4, S(1, 13) = 2, S(9, 2, 4) = 10`"
             }
         ]
     },
@@ -54,6 +59,7 @@
         "banner": "Test what you've learned.\nFor example write down `S(!1(S(2), S(3)))` and check if the result is as expected.\nWrite `done` when you finished playing. Enjoy!",
         "tests": [],
         "limits": ["define", "load", "bracket", "builtinCn", "builtinPr", "builtinMn", "naturallist"],
+        "have": [],
         "hints": []
     },
     {
@@ -97,6 +103,11 @@
                 "type": "typewriter",
                 "content": "Let's practice what we learned.",
                 "highlights": ["practice"]
+            },
+            {
+                "type": "sidenote",
+                "title": "fundamental",
+                "content": "`Cn` is Composition: `a = Cn[f, g, h] -> a(x, y, z) = f(g(x, y, z), h(x, y, z))`"
             }
         ]
     },
@@ -114,9 +125,85 @@
             [0,13,9]
         ],
         "limits": ["load", "bracket", "builtinPr", "builtinMn", "naturallist"],
+        "have": [],
         "hints": [
             "You can first make `x+3` and then put `z` in its `x` using a `Cn`\nNext hint is the full answer. Try not to use it.",
             "Cn[Cn[S, Cn[S, S]], !2]"
         ]
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [3],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "`Cn` helped us a lot for playing with inputs, outputs, and their arrengement.\nBut, we are still weak. How can we construct a function that depends on two of its inputs?\n`S`, `!`, and `#` care about atmost one of their inputs.\nTherefore, any composition of them would, practically, care about atmost one input.\nSo, we wouldn't be able of constructing functions like `x+y`!",
+                "highlights": ["arrengement", "depends", "practically", "`x+y`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Now, RFPL gives us a powerful function `Pr` (Pr stands for Primitive Recursion).\n`Pr`, gets two functions and constructs another. `Pr[f, g]` means:",
+                "highlights": ["RFPL", "`Pr`"]
+            },
+            {
+                "type": "print",
+                "content": "h = Pr[f, g]\nh gets 2 inputs, f gets 1 input, and g gets 3 inputs\nh(0, y)=f(y), h(x+1, y) = g(h(x, y), x, y)"
+            },
+            {
+                "type": "typewriter",
+                "content": "`h = Pr[f, g]` is Recursion with base case `f` and step `g`.\nIn general case:",
+                "highlights": ["base case", "step"]
+            },
+            {
+                "type": "print",
+                "content": "h(0, y_1, ..., y_k) = f(y_1, ..., y_k),\nh(x+1, y_1, ..., y_k) = g(h(x, y_1, ..., y_k), x, y_1, ..., y_k)"
+            },
+            {
+                "type": "typewriter",
+                "content": "Now, we can construct almost every function we want! Let's go for some challenges!",
+                "highlights": ["almost"]
+            },
+            {
+                "type": "sidenote",
+                "title": "fundamental",
+                "content": "`Pr` is Primitive Recursion:\n          h = Pr[f, g]:  h(0, y_1, ..., y_k) = f(y_1, ..., y_k),\n      h(x+1, y_1, ..., y_k) = g(h(x, y_1, ..., y_k), x, y_1, ..., y_k)"
+            }
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge02",
+        "prerequisites": [4],
+        "target": "x+y",
+        "banner": "Construct `add(x, y) = x + y` and type `done`.\nYou have 1 hint in this challenge.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "tests": [
+            [0,0],
+            [1,2],
+            [3,5],
+            [5,8],
+            [13,9],
+            [21,27],
+            [29,81]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": [],
+        "hints": ["What is `add(0, y)`? If you have `x+y` how can you compute `(x+1)+y`?"]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge03",
+        "prerequisites": [4],
+        "target": "y^x",
+        "banner": "`pow(x, y) = y ^ x`, note that it's not `x ^ y`!\nYou have 1 hint. You can use `Add` without defining it.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "tests": [
+            [0,2],
+            [2,3],
+            [3,4],
+            [3,10],
+            [12,0]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": ["Add"],
+        "hints": ["First, construct `mul`."]
     }
 ]
