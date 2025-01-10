@@ -1,4 +1,5 @@
 import sys
+import hashlib
 import traceback
 from antlr4 import *
 from dataclasses import dataclass, field
@@ -58,7 +59,7 @@ class SymbolTable:
 
 
 class HashCache:
-    CACHE = False
+    CACHE = True
 
     def __init__(self, basic_functions):
         self.basic_functions = basic_functions
@@ -92,24 +93,26 @@ class HashCache:
         if self.counter[fun.ix] == self.counter_max:
             return self.possibleMatches[fun.ix][0].call(blist, args)
         hsh = self.hash(args)
-        if hsh in self.cache[fun.ix].keys():
+        if hsh in self.cache[fun.ix]:
             return self.cache[fun.ix][hsh]
         res = fun.call(blist, args)
-        reshsh = res.weirdHash()
-        for ent in self.possibleMatches[fun.ix]:
-            rel = ent.call(blist, args)
-            if rel.weirdHash() != reshsh:
-                self.possibleMatches[fun.ix].remove(ent)
-        mocknatlst = self.makeMockNaturalList(self.counter[fun.ix])
-        for ent in self.possibleMatches[fun.ix]:
-            rel = ent.call(None, mocknatlst)
+        if self.possibleMatches[fun.ix]:
+            reshsh = res.weirdHash()
+            resnat = res.toInt()
+            for ent in self.possibleMatches[fun.ix]:
+                rel = ent.call(blist, args)
+                if rel.weirdHash() != reshsh and rel.toInt() != resnat:
+                    self.possibleMatches[fun.ix].remove(ent)
+            mocknatlst = self.makeMockNaturalList(self.counter[fun.ix])
             rez = fun.call(None, mocknatlst)
-            if rel.weirdHash() != rez.weirdHash():
-                self.possibleMatches[fun.ix].remove(ent)
-        if len(self.possibleMatches[fun.ix]):
-            self.counter[fun.ix] += 1
-            if self.counter[fun.ix] == self.counter_max:
-                debug(f'replacing {fun.symbol} with {self.possibleMatches[fun.ix][0].symbol} ...')
+            for ent in self.possibleMatches[fun.ix]:
+                rel = ent.call(None, mocknatlst)
+                if rel.weirdHash() != rez.weirdHash() and rel.toInt() != rez.toInt():
+                    self.possibleMatches[fun.ix].remove(ent)
+            if len(self.possibleMatches[fun.ix]):
+                self.counter[fun.ix] += 1
+                if self.counter[fun.ix] == self.counter_max:
+                    debug(f'replacing {fun.symbol} with {self.possibleMatches[fun.ix][0].symbol} ...')
         self.cache[fun.ix][hsh] = res
         return res
 

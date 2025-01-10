@@ -186,7 +186,7 @@ class Natural:
         if isinstance(self.__natural, list):
             for nat in self.__natural:
                 lst += nat.weirdHash() + '+'
-        hashlib.md5(lst.encode()).hexdigest()
+        return hashlib.md5(lst.encode()).hexdigest()
 
 
 class NaturalList:
