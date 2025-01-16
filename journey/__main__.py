@@ -236,11 +236,15 @@ challengeFunctions = {
         'nargs': 2
     },
     'y/x': {
-        'func': lambda args : Natural(args[1].toInt() // args[0].toInt()),
+        'func': lambda args : Natural(args[0].toInt() // args[1].toInt()),
         'nargs': 2
     },
     'x%y': {
         'func': lambda args : args[0] % args[1],
+        'nargs': 2
+    },
+    '|x-y|': {
+        'func': lambda args : Natural(max(args[0].toInt() - args[1].toInt(), args[1].toInt() - args[0].toInt())),
         'nargs': 2
     },
     'GCD': {

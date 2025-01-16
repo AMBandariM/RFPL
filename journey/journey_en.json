@@ -6,7 +6,7 @@
             {
                 "type": "typewriter",
                 "content": "Hello there! Welcome to The RFPL Journey!\nWe are going to learn about Recursive Functions and this Programming Language!\nMay I ask Your Name?",
-                "highlights": ["The RFPL Journey", "Your Name"]
+                "highlights": ["The RFPL Journey", "Your Name", "Recursive Functions", "Programming Language"]
             },
             {
                 "type": "getusername"
@@ -87,7 +87,7 @@
             },
             {
                 "type": "typewriter",
-                "content": "You probably got the idea. `Cn` can get any (>= 1) number of functions like `Cn[f,g_0,...,g_k]`.\nThe first function is a little bit special. When we call function `Cn[f,g_0,...,g_k]` with some inputs,\nthose inputs would be gave to `g_i` functions and the outputs (of `g_i`s) would be inputs of `f`\nand the output of `f` is our final output!",
+                "content": "You probably got the idea. `Cn` can get any (>= 1) number of functions like `Cn[f,g_0,...,g_k]`.\nThe first function is a little bit special. When we call function `Cn[f,g_0,...,g_k]` with some inputs,\nthose inputs would be given to `g_i` functions and the outputs (of `g_i`s) would be inputs of `f`\nand the output of `f` is our final output!",
                 "highlights": ["special", "inputs", "outputs", "final output"]
             },
             {
@@ -143,7 +143,7 @@
             {
                 "type": "typewriter",
                 "content": "Now, RFPL gives us a powerful function `Pr` (Pr stands for Primitive Recursion).\n`Pr`, gets two functions and constructs another. `Pr[f, g]` means:",
-                "highlights": ["RFPL", "`Pr`"]
+                "highlights": ["RFPL", "`Pr`", "Primitive Recursion"]
             },
             {
                 "type": "print",
@@ -231,7 +231,7 @@
         "starter": "challenge05",
         "prerequisites": [7],
         "target": "|x-y|",
-        "banner": "Compute the difference between `x` and `y`, `abs(2, 7) = abs(7, 2) = 5`.\nYou can use `Sub` without defining it.\nKeys: `list`, `done`, and `end`.",
+        "banner": "Compute the difference between `x` and `y`, `abs(2, 7) = abs(7, 2) = 5`.\nYou can use `Add` and `Sub` without defining them.\nKeys: `list`, `done`, and `end`.",
         "tests": [
             [2,7],
             [7,2],
@@ -240,7 +240,7 @@
             [7,15]
         ],
         "limits": ["load", "bracket", "builtinMn", "naturallist"],
-        "have": ["Sub"],
+        "have": ["Add", "Sub"],
         "hints": []
     },
     {
@@ -263,8 +263,8 @@
         "type": "challenge",
         "starter": "challenge06",
         "prerequisites": [9],
-        "target": "y/x",
-        "banner": "Task is pretty straight forward, implement integer division: `5 / 2 = 2, 101 / 7 = 14`\nYou can assume `x > 0` and return whatever you want in case of `x = 0`.\nThere is 3 hints and you can use `Add`, `Mul`, and `Sub` without defining them.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "target": "x/y",
+        "banner": "TODO :: EDIT THIS SHIT !!! Task is pretty straight forward, implement integer division: `5 / 2 = 2, 101 / 7 = 14`\nYou can assume `y > 0` and return whatever you want in case of `y = 0`.\nThere is 3 hints and you can use `Add`, `Mul`, and `Sub` without defining them.\nKeys: `hint`, `list`, `done`, and `end`.",
         "tests": [
             [2,5],
             [7,101],
@@ -276,8 +276,8 @@
         "have": ["Add", "Mul", "Sub"],
         "hints": [
             "This challenge is a little bit hard. Spend more time on it.",
-            "`k = y / x` is the biggest integer such that `k * x <= y`\n Or, it is kinda number of such integers!",
-            "make a function `I(k, x, y) = 1 if k * x <= y else 0` and add this `I` for `k = 1, 2, ..., ?`"
+            "`k = x / y` is the biggest integer such that `k * y <= x`\n Or, it is kinda number of such integers!",
+            "make a function `I(k, x, y) = 1 if k * y <= x else 0` and add this `I` for `k = 1, 2, ..., ?`"
         ]
     },
     {

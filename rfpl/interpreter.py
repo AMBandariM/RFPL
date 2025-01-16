@@ -355,7 +355,7 @@ class Interpreter:
             ))
         elif na > len(args):
             self.addMessage(Message.errorContext(
-                f'the function excepts {na} arguments but got {len(args)}',
+                f'the function expects {na} arguments but got {len(args)}',
                 tree,
             ))
         if self.has_error:
