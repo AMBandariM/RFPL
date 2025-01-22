@@ -1,0 +1,394 @@
+[
+    {
+        "type": "userguide",
+        "prerequisites": [],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "Hello there! Welcome to The RFPL Journey!\nWe are going to learn about Recursive Functions and this Programming Language!\nMay I ask Your Name?",
+                "highlights": ["The RFPL Journey", "Your Name", "Recursive Functions", "Programming Language"]
+            },
+            {
+                "type": "getusername"
+            },
+            {
+                "type": "typewriter",
+                "content": "Greate! Let's start our journey!\nIn RFPL, we just have (non-negative) numbers and functions on them!\nActually, we are interested on constructing (complex) functions using our fundamental (ingredient) functions!",
+                "highlights": ["RFPL", "fundamental"]
+            },
+            {
+                "type": "typewriter",
+                "content": "But what are these fundamental functions?\nMaybe the most trivial functions be Constant functions, they wouldn't listen to any inputs and just return a fix number!\nIn RFPL, we show these functions by `#` (sharp), for example #3 is a function that returns 3 no matter what people say!",
+                "highlights": ["#3", " 3", "RFPL", "Constant", "`#`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Next trivial functions are Identity functions, they wouldn't think and just return (one of) their input(s)!\nwe show these functions by `!` (bang), for example !0 returns its first (0-based indexing) input!\nSee these examples:",
+                "highlights": ["RFPL", "Identity", "`!`", "!0", "first"]
+            },
+            {
+                "type": "print",
+                "content": "#2(1, 8) = 2, #7() = 7, !0(1, 3) = 1, !2(3, 4, 5) = 5"
+            },
+            {
+                "type": "typewriter",
+                "content": "But, what we can construct using Constant and Identity functions?\nEvery composition(?) of these functions would be ether Constant or Identity :(\nSo let me intoduce you function `S` (S stands for Successor).\nThis function returns next number after its (first) input:",
+                "highlights": ["composition", "`S`"]
+            },
+            {
+                "type": "print",
+                "content": "S(0) = 1, S(S(2)) = 4, S(1, 13) = 2, S(9, 2, 4) = 10"
+            },
+            {
+                "type": "typewriter",
+                "content": "Now, go and `play-around` a little bit and make yourself comfortable.",
+                "highlights": ["`play-around`"]
+            },
+            {
+                "type": "sidenote",
+                "title": "fundamental",
+                "content": "`#n` is Constant n: `#2(1, 8) = 2, #7() = 7`\n`!n` is Identity, returning (n+1)-th input: `!0(1, 3) = 1, !2(3, 4, 5) = 5`\n`S` is Successor: `S(0) = 1, S(S(2)) = 4, S(1, 13) = 2, S(9, 2, 4) = 10`"
+            }
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "play-around",
+        "prerequisites": [0],
+        "target": "",
+        "banner": "Test what you've learned.\nFor example write down `S(!1(S(2), S(3)))` and check if the result is as expected.\nWrite `done` when you finished playing. Enjoy!",
+        "tests": [],
+        "limits": ["define", "load", "bracket", "builtinCn", "builtinPr", "builtinMn", "naturallist"],
+        "have": [],
+        "hints": []
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [1],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "Yes, that palying-around was cool, but there were no new functions! Just new values!\nWe said we are interested in constructing (complex) fucntions!\nSo let's define new functions using `=` (big surprise!).\nFor example `a = S` means `a` is a function performing exactly like `S`.",
+                "highlights": ["new functions", "exactly", "`=`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Previously, we tried `S(S(2))` which was 2+2. How can we define a new function x+2?\n`b = S(S)` might seem cool at the first thought, but RFPL doesn't think so.\n`a(x) = S(x)` makes sense but `b(x) = S(S)(x)`? It's weird.\nPlus, we don't like parentheses when we're defining functions, they're for calling them.",
+                "highlights": ["RFPL", "parentheses"]
+            },
+            {
+                "type": "typewriter",
+                "content": "So what we gonna do? It's time to introduce another fundamental function: `Cn` (Cn stands for Composition).\nThis function gets functions and makes another one! Let's see some example:",
+                "highlights": ["`Cn`", "Composition", "gets functions"]
+            },
+            {
+                "type": "print",
+                "content": "a = Cn[f, g, h] -> a(x, y, z) = f(g(x, y, z), h(x, y, z))\na = Cn[b, !1, !0] -> a(x,y) = b(y,x)\na = Cn[S, S] -> a(x) = x + 2"
+            },
+            {
+                "type": "typewriter",
+                "content": "You probably got the idea. `Cn` can get any (>= 1) number of functions like `Cn[f,g_0,...,g_k]`.\nThe first function is a little bit special. When we call function `Cn[f,g_0,...,g_k]` with some inputs,\nthose inputs would be given to `g_i` functions and the outputs (of `g_i`s) would be inputs of `f`\nand the output of `f` is our final output!",
+                "highlights": ["special", "inputs", "outputs", "final output"]
+            },
+            {
+                "type": "typewriter",
+                "content": "For constructing `f = S(!1(S(x), S(y)))` we have:",
+                "highlights": []
+            },
+            {
+                "type": "print",
+                "content": "f = Cn[S, Cn[!1, Cn[S, !0], Cn[S, !1]]]"
+            },
+            {
+                "type": "typewriter",
+                "content": "Let's practice what we learned.",
+                "highlights": ["practice"]
+            },
+            {
+                "type": "sidenote",
+                "title": "fundamental",
+                "content": "`Cn` is Composition: `a = Cn[f, g, h] -> a(x, y, z) = f(g(x, y, z), h(x, y, z))`"
+            }
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge01",
+        "prerequisites": [2],
+        "target": "z+3",
+        "banner": "In this challenge you have to make a function like `f(x, y, z) = z + 3`\nYou have 2 hints in this challenge, you can get them by typing `hint`\nAfter constructing (defining) the target function, type `done` to finish the challenge.\nYou can type `list` to see all functions you've defined and `end` to exit the challenge.",
+        "tests": [
+            [0,0,3],
+            [1,2,4],
+            [10,3,5],
+            [12,5,8],
+            [0,13,9]
+        ],
+        "limits": ["load", "bracket", "builtinPr", "builtinMn", "naturallist"],
+        "have": [],
+        "hints": [
+            "You can first make `x+3` and then put `z` in its `x` using a `Cn`\nNext hint is the full answer. Try not to use it.",
+            "Cn[Cn[S, Cn[S, S]], !2]"
+        ]
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [3],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "`Cn` helped us a lot for playing with inputs, outputs, and their arrangement.\nBut, we are still weak. How can we construct a function that depends on two of its inputs?\n`S`, `!`, and `#` care about atmost one of their inputs.\nTherefore, any composition of them would, practically, care about atmost one input.\nSo, we wouldn't be able of constructing functions like `x+y`!",
+                "highlights": ["arrangement", "depends", "practically", "`x+y`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Now, RFPL gives us a powerful function `Pr` (Pr stands for Primitive Recursion).\n`Pr`, gets two functions and constructs another. `Pr[f, g]` means:",
+                "highlights": ["RFPL", "`Pr`", "Primitive Recursion"]
+            },
+            {
+                "type": "print",
+                "content": "h = Pr[f, g]\nh gets 2 inputs, f gets 1 input, and g gets 3 inputs\nh(0, y)=f(y), h(x+1, y) = g(h(x, y), x, y)"
+            },
+            {
+                "type": "typewriter",
+                "content": "`h = Pr[f, g]` is Recursion with base case `f` and step `g`.\nIn general case:",
+                "highlights": ["base case", "step"]
+            },
+            {
+                "type": "print",
+                "content": "h(0, y_1, ..., y_k) = f(y_1, ..., y_k),\nh(x+1, y_1, ..., y_k) = g(h(x, y_1, ..., y_k), x, y_1, ..., y_k)"
+            },
+            {
+                "type": "typewriter",
+                "content": "Now, we can construct almost every function we want! Let's go for some challenges!",
+                "highlights": ["almost"]
+            },
+            {
+                "type": "sidenote",
+                "title": "fundamental",
+                "content": "`Pr` is Primitive Recursion:\n          h = Pr[f, g]:  h(0, y_1, ..., y_k) = f(y_1, ..., y_k),\n      h(x+1, y_1, ..., y_k) = g(h(x, y_1, ..., y_k), x, y_1, ..., y_k)"
+            }
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge02",
+        "prerequisites": [4],
+        "target": "x+y",
+        "banner": "Construct `add(x, y) = x + y` and type `done`.\nYou have 1 hint in this challenge.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "tests": [
+            [0,0],
+            [1,2],
+            [3,5],
+            [5,8],
+            [13,9],
+            [21,27],
+            [29,81]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": [],
+        "hints": ["What is `add(0, y)`? If you have `x+y` how can you compute `(x+1)+y`?"]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge03",
+        "prerequisites": [4],
+        "target": "y^x",
+        "banner": "`pow(x, y) = y ^ x`, note that it's not `x ^ y`!\nYou have 1 hint. You can use `Add` without defining it.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "tests": [
+            [0,2],
+            [2,3],
+            [3,4],
+            [3,10],
+            [12,0]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": ["Add"],
+        "hints": ["First, construct `mul`."]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge04",
+        "prerequisites": [5,6],
+        "target": "y-x",
+        "banner": "In this challenge we are going to construct substraction function.\nBut wait! We don't have negative numbers!\nThat's OK, we just consider negative results as `0`, for example `2 - 5 = 0`.\n`sub(x, y) = max(y - x, 0)`, note that it's not `x - y`! You have 2 hints.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "tests": [
+            [1,3],
+            [5,1],
+            [0,0],
+            [3,10],
+            [7,0]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": [],
+        "hints": [
+            "First, construct `sub1(x) = max(x - 1, 0)`",
+            "Note that f = Pr[g, h] means f(x+1) = h(?, x)!"
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge05",
+        "prerequisites": [7],
+        "target": "|x-y|",
+        "banner": "Compute the difference between `x` and `y`, `abs(2, 7) = abs(7, 2) = 5`.\nYou can use `Add` and `Sub` without defining them.\nKeys: `list`, `done`, and `end`.",
+        "tests": [
+            [2,7],
+            [7,2],
+            [0,0],
+            [9,1],
+            [7,15]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": ["Add", "Sub"],
+        "hints": []
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [8],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "Cool! Now we have `Add`, `Mul`, `Pow`, `Sub`, and `Abs`!\nBoolian functions like `And`, `Or`, and `Not` are fairly easy to construct,\nso we assume you could make them whenever you want to.",
+                "highlights": ["`Add`", "`Mul`", "`Pow`", "`Sub`", "`Abs`", "`And`", "`Or`", "`Not`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Let's go for a bigger fish!",
+                "highlights": ["bigger fish"]
+            }
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge06",
+        "prerequisites": [9],
+        "target": "x/y",
+        "banner": "TODO :: EDIT THIS SHIT !!! Task is pretty straight forward, implement integer division: `5 / 2 = 2, 101 / 7 = 14`\nYou can assume `y > 0` and return whatever you want in case of `y = 0`.\nThere is 3 hints and you can use `Add`, `Mul`, and `Sub` without defining them.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "tests": [
+            [2,5],
+            [7,101],
+            [2,0],
+            [3,70],
+            [7,15]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": ["Add", "Mul", "Sub"],
+        "hints": [
+            "This challenge is a little bit hard. Spend more time on it.",
+            "`k = x / y` is the biggest integer such that `k * y <= x`\n Or, it is kinda number of such integers!",
+            "make a function `I(k, x, y) = 1 if k * y <= x else 0` and add this `I` for `k = 1, 2, ..., ?`"
+        ]
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [10],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "Great Job! Now you can construct `Log` function using similar trick.",
+                "highlights": ["`Log`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Let't make some useful functions in Number Theory.",
+                "highlights": ["Number Theory"]
+            }
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge07",
+        "prerequisites": [11],
+        "target": "x%y",
+        "banner": "Implement `x%y`, you can assume `y>0` and return anything when `y=0`.\nYou can use `Add`, `Mul`, and `Sub` without defining them.\nKeys: `list`, `done`, and `end`.",
+        "tests": [
+            [4,11],
+            [101,7],
+            [2,1],
+            [7,2],
+            [70,15]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": ["Add", "Mul", "Sub"],
+        "hints": [
+            "This challenge is a little bit hard. Spend more time on it.",
+            "`k = y / x` is the biggest integer such that `k * x <= y`\n Or, it is kinda number of such integers!",
+            "make a function `I(k, x, y) = 1 if k * x <= y else 0` and add this `I` for `k = 1, 2, ..., ?`"
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge08",
+        "prerequisites": [11],
+        "target": "GCD",
+        "banner": "Copmute Greatest Common Divisor of `x` and `y`, you can assume `x + y > 0`\nYou have 1 hint and you can use `Add`, `Mul`, `Sub`, and `Mod` without defining them.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "tests": [
+            [12,7],
+            [1,33],
+            [21,0],
+            [0,21],
+            [12,4],
+            [7,35]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": ["Add", "Mul", "Sub", "Mod"],
+        "hints": [
+            "That trick in making `div` is not useful here,\nbut you can compute `max int s.t. something` in another way, too."
+        ]
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [12,13],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "That trick in `GCD` can be helpful in making other functions.\nYou can compute `v_p(x)` which is maximum `k` such that `p^k | x` (divises).",
+                "highlights": ["`v_p(x)`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Let's go for an other Idea!",
+                "highlights": []
+            }
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "challenge08",
+        "prerequisites": [14],
+        "target": "fib",
+        "banner": "Fibonacci sequence is 1, 1, 2, 3, 5, ... and `f(n+1) = f(n) + f(n-1)`.\nYou have 3 hints and you can use `Add`, `Mul`, `Sub`, and `Mod` without defining them.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "tests": [
+            [0],
+            [1],
+            [2],
+            [3],
+            [4]
+        ],
+        "limits": ["load", "bracket", "builtinMn", "naturallist"],
+        "have": ["Add", "Mul", "Sub", "Mod"],
+        "hints": [
+            "`fib` can't compute its result knowing just the previous member in sequence.\nBut you can compute `fib(n+2),fib(n+1)` knowing `fib(n+1),fib(n)`.\nHow can we return a `Touple` instead of an `Integer`?",
+            "We have to pack our outputs and unpack inputs that we know are packed!",
+            "use `2^x * 3^y` for packing `x,y` and use `v_2` and `v_3` for unpacking!"
+        ]
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [15],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "Thank you for following! We are developing this Journey...",
+                "highlights": ["Journey"]
+            }
+        ]
+    },
+
+    {
+        "type": "writer-contact",
+        "fullname": "AmirMohammad Bandari Masoole",
+        "email": "random@gmail.com"
+    }
+]

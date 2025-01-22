@@ -18,7 +18,7 @@ from .natural import Natural
 def check_grammar(cmd, superc=True):
     if superc and re.match(r'^\s*(exit|finish|end|list|save\s+[\w/\-]+)\s*$', cmd):
         return True
-    return intr.parsable(cmd)
+    return intr.parsable(cmd)[0]
 
 
 custom_style = Style.from_dict({

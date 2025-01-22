@@ -1,11 +1,11 @@
 import sys
+import hashlib
 import traceback
 from antlr4 import *
 from dataclasses import dataclass, field
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.error.Errors import ParseCancellationException
 from typing import Union, List, Dict, Tuple, Callable
-import hashlib
 import random
 from enum import Enum
 
@@ -72,12 +72,10 @@ class HashCache:
         lst = ''
         started = False
         for arg in args.content[::-1]:
-            iii = arg.toInt()
-            if iii:
+            if not arg.isZero():
                 started = True
-            iii %= 600851475143
             if started:
-                lst += str(iii) + '-'
+                lst += arg.weirdHash() + '+'
         return hashlib.md5(lst.encode()).hexdigest()
 
     def makeMockNaturalList(self, n: int):
@@ -95,24 +93,26 @@ class HashCache:
         if self.counter[fun.ix] == self.counter_max:
             return self.possibleMatches[fun.ix][0].call(blist, args)
         hsh = self.hash(args)
-        if hsh in self.cache[fun.ix].keys():
+        if hsh in self.cache[fun.ix]:
             return self.cache[fun.ix][hsh]
         res = fun.call(blist, args)
-        intres = res.toInt()
-        for ent in self.possibleMatches[fun.ix]:
-            rel = ent.call(blist, args)
-            if rel.toInt() != intres:
-                self.possibleMatches[fun.ix].remove(ent)
-        mocknatlst = self.makeMockNaturalList(self.counter[fun.ix])
-        for ent in self.possibleMatches[fun.ix]:
-            rel = ent.call(None, mocknatlst)
+        if self.possibleMatches[fun.ix]:
+            reshsh = res.weirdHash()
+            resnat = res.toInt()
+            for ent in self.possibleMatches[fun.ix]:
+                rel = ent.call(blist, args)
+                if rel.weirdHash() != reshsh and rel.toInt() != resnat:
+                    self.possibleMatches[fun.ix].remove(ent)
+            mocknatlst = self.makeMockNaturalList(self.counter[fun.ix])
             rez = fun.call(None, mocknatlst)
-            if rel.toInt() != rez.toInt():
-                self.possibleMatches[fun.ix].remove(ent)
-        if len(self.possibleMatches[fun.ix]):
-            self.counter[fun.ix] += 1
-            if self.counter[fun.ix] == self.counter_max:
-                debug(f'replacing {fun.symbol} with {self.possibleMatches[fun.ix][0].symbol} ...')
+            for ent in self.possibleMatches[fun.ix]:
+                rel = ent.call(None, mocknatlst)
+                if rel.weirdHash() != rez.weirdHash() and rel.toInt() != rez.toInt():
+                    self.possibleMatches[fun.ix].remove(ent)
+            if len(self.possibleMatches[fun.ix]):
+                self.counter[fun.ix] += 1
+                if self.counter[fun.ix] == self.counter_max:
+                    debug(f'replacing {fun.symbol} with {self.possibleMatches[fun.ix][0].symbol} ...')
         self.cache[fun.ix][hsh] = res
         return res
 
@@ -190,34 +190,9 @@ class Interpreter:
         self.symbol_table.add(
             symbol='S', 
             call=lambda _blist, args : args[0].succ(), 
-            builtin=True
+            builtin=True,
+            nargs=1
         )
-        self.basic_arithmetic_enteries = [
-            SymbolEntry(
-                symbol='Add',
-                call=lambda _blist, args : args[0] + args[1],
-                builtin=True,
-                nargs=2
-            ),
-            SymbolEntry(
-                symbol='Sub',
-                call=lambda _blist, args : args[1] - args[0],
-                builtin=True,
-                nargs=2
-            ),
-            SymbolEntry(
-                symbol='Mul',
-                call=lambda _blist, args : args[0] * args[1],
-                builtin=True,
-                nargs=2
-            ),
-            SymbolEntry(
-                symbol='Pow',
-                call=lambda _blist, args : args[1] ** args[0],
-                builtin=True,
-                nargs=2
-            )
-        ]
         
         def _getEntry(_blist, args):
             if args[1].isZero():
@@ -238,41 +213,66 @@ class Interpreter:
                 args[0].factor()
             return args[0]
         
-        self.basic_sequential_enteries = [
-            SymbolEntry(
+        self.allBuitinFunctions = {
+            "Add": SymbolEntry(
+                symbol='Add',
+                call=lambda _blist, args : args[0] + args[1],
+                builtin=True,
+                nargs=2
+            ),
+            "Sub": SymbolEntry(
+                symbol='Sub',
+                call=lambda _blist, args : args[1] - args[0],
+                builtin=True,
+                nargs=2
+            ),
+            "Mul": SymbolEntry(
+                symbol='Mul',
+                call=lambda _blist, args : args[0] * args[1],
+                builtin=True,
+                nargs=2
+            ),
+            "Pow": SymbolEntry(
+                symbol='Pow',
+                call=lambda _blist, args : args[1] ** args[0],
+                builtin=True,
+                nargs=2
+            ),
+            "Get": SymbolEntry(
                 symbol='Get',
                 call=_getEntry,
                 builtin=True,
                 nargs=2
             ),
-            SymbolEntry(
+            "Set": SymbolEntry(
                 symbol='Set',
                 call=_setEntry,
                 builtin=True,
                 nargs=3
             ),
-            SymbolEntry(
+            "Int": SymbolEntry(
                 symbol='Int',
                 call=_int,
                 builtin=True,
                 nargs=1
             ),
-            SymbolEntry(
+            "List": SymbolEntry(
                 symbol='List',
                 call=_list,
                 builtin=True,
                 nargs=1
             ),
-        ]
-        self.basic_numbertheory_enteries = [
-            SymbolEntry(
+            "Mod": SymbolEntry(
                 symbol='Mod',
                 call=lambda _blist, args : args[0] % args[1],
                 builtin=True
             ),
-        ]
+        }
+        self.basic_arithmetic_enteries = []
+        self.basic_sequential_enteries = []
+        self.basic_numbertheory_enteries = []
         self.cache = HashCache(
-            self.basic_arithmetic_enteries + self.basic_sequential_enteries + self.basic_numbertheory_enteries
+            [self.allBuitinFunctions[name] for name in ["Add", "Sub", "Mul", "Pow", "Get", "Set", "Mod"]]
         )
         self.messages: List[Message] = []
         self.has_error = False
@@ -282,18 +282,13 @@ class Interpreter:
         if msg.typ in (MessageType.ERROR, MessageType.EXCEPTION):
             self.has_error = True
 
-    def loadList(self, lst: list):
-        names = []
-        for ent in lst:
-            self.symbol_table.addEntry(ent)
-            names.append(ent.symbol)
-        return names
+    def loadList(self, names: List[str]):
+        for name in names:
+            self.symbol_table.addEntry(self.allBuitinFunctions[name])
 
     def loadBasics(self):
-        names = []
-        names += self.loadList(self.basic_arithmetic_enteries)
-        names += self.loadList(self.basic_sequential_enteries)
-        names += self.loadList(self.basic_numbertheory_enteries)
+        names = [name for name in self.allBuitinFunctions]
+        self.loadList(names)
         return names
 
     def interpretFexpr(self, tree, blist: BaseList, args: NaturalList) -> Natural:
@@ -360,7 +355,7 @@ class Interpreter:
             ))
         elif na > len(args):
             self.addMessage(Message.errorContext(
-                f'the function excepts {na} arguments but got {len(args)}',
+                f'the function expects {na} arguments but got {len(args)}',
                 tree,
             ))
         if self.has_error:
@@ -599,7 +594,7 @@ class Interpreter:
         else:
             raise Exception(f'Unknown tree type {tree.getText()}')
         
-    def parsable(self, text: str) -> bool:
+    def parsable(self, text: str):
         input_stream = InputStream(text)
         lexer = RFPLLexer(input_stream)
         stream = CommonTokenStream(lexer)
@@ -609,8 +604,8 @@ class Interpreter:
         lexer.addErrorListener(error_listener)
         parser.removeErrorListeners()
         parser.addErrorListener(error_listener)
-        parser.singleline()
-        return not error_listener.has_unexpected_eof
+        tree = parser.singleline()
+        return not error_listener.has_unexpected_eof, tree
         
     def loadFile(self, filename: str) -> bool:
         if filename == 'basics':
@@ -634,7 +629,7 @@ class Interpreter:
             cmd = ''
             for line in lines:
                 cmd += line.strip() + ' '
-                if not self.parsable(cmd):
+                if not self.parsable(cmd)[0]:
                     continue
                 cmdok, _ = self.report(cmd, clear=False)
                 if not cmdok:
