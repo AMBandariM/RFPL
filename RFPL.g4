@@ -18,15 +18,15 @@ fexpr         : fexprleaf
               | identity
               | constant
               | bracket ;
-fexprleaf     : Symbol
-              | Symbol '[' fexprlist ']' ;
+fexprleaf     : Lazy? Symbol
+              | Lazy? Symbol '[' fexprlist ']' ;
 fexprlist     : fexpr (',' fexpr)* ;
-builtinCn     : 'Cn' '[' fexprlist ']' ;
-builtinPr     : 'Pr' '[' fexpr ',' fexpr ']' ;
-builtinMn     : 'Mn' '[' fexpr ']' ;
+builtinCn     : Lazy? 'Cn' '[' fexprlist ']' ;
+builtinPr     : Lazy? 'Pr' '[' fexpr ',' fexpr ']' ;
+builtinMn     : Lazy? 'Mn' '[' fexpr ']' ;
 identity      : '!' Number ;
 constant      : '#' natural ;
-bracket       : '@' Number ;
+bracket       : Lazy? '@' Number ;
 nexpr         : fexpr '(' nexprlist ')' 
               | natural ;
 nexprlist     : /* epsilon */ 
@@ -38,6 +38,7 @@ naturallist   : /* epsilon */
               | natural (',' natural)* ;
 
 // Lexer rules (start with uppercase)
+Lazy          : '~' ;
 Number        : [0-9]+ ;
 Symbol        : [-a-zA-Z_][-a-zA-Z0-9_]* ;
 Whitespace    : [ \t\r\n]+ -> channel(HIDDEN) ;  // Skip whitespace

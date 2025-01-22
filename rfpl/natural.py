@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import Union, List, Callable
 import hashlib
 from .RFPLParser import RFPLParser
 
@@ -25,18 +25,25 @@ def get_prime(i):
 class Natural:
     __slots__ = ('__natural',)
 
-    def __init__(self, natural: Union[int, List['Natural']]):
+    def __init__(self, natural: Union[int, List['Natural'], Callable[[], 'Natural']]):
         if isinstance(natural, int) and natural < 0:
             raise Exception(f'Cannot initialize natural with negative number {natural}')
-        self.__natural: Union[int, List['Natural']] = natural
+        self.__natural = natural
+
+    def normalize(self):
+        if callable(self.__natural):
+            self.__natural = self.__natural().__natural
     
     def is_defined(self):
+        self.normalize()
         return self.__natural is not None
 
     def is_zero(self):
+        self.normalize()
         return self.__natural == 0
     
     def is_one(self):
+        self.normalize()
         if isinstance(self.__natural, int):
             return self.__natural == 1
         return self.is_defined() and all(x.is_zero() for x in self.__natural)
@@ -180,21 +187,19 @@ class Natural:
         return '<{}>'.format(', '.join(subreps))
 
     def weird_hash(self):
-        lst = ''
-        if isinstance(self.__natural, int):
-            lst += str(self.__natural) + '+'
-        if isinstance(self.__natural, list):
-            for nat in self.__natural:
-                lst += nat.weird_hash() + '+'
-        return hashlib.md5(lst.encode()).hexdigest()
+        # TODO: needs to be changed
+        return hashlib.md5(str(self).encode()).hexdigest()
 
 
 class NaturalList:
     def __init__(self, content: List[Natural]=[]):
-        self.content = content.copy()
+        self.content = content
+
+    def copy(self):
+        return NaturalList(self.content.copy())
     
     def __add__(self, other: 'NaturalList'):
-        return NaturalList(self.content.copy() + other.content.copy())
+        return NaturalList(self.content + other.content)
 
     def __getitem__(self, index: int):
         if index >= len(self.content):

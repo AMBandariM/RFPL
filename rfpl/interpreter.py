@@ -317,8 +317,10 @@ class Interpreter:
         self.load_names(names)
         return names
 
-    def interpret_fexpr(self, tree, blist: BaseList, args: NaturalList) -> Natural:
-        tree = tree.getChild(0)
+    def interpret_fexpr(self, root, blist: BaseList, args: NaturalList, strict: bool = False) -> Natural:
+        tree = root.getChild(0)
+        if not strict and tree.getToken(RFPLParser.Lazy, 0) is not None:
+            return Natural(lambda args=args.copy() : self.interpret_fexpr(root, blist, args, strict=True))
         if isinstance(tree, RFPLParser.FexprleafContext):
             bnxt = None
             if tree.fexprlist() is not None:
@@ -366,6 +368,8 @@ class Interpreter:
             if not result.is_defined():
                 return Natural(None)
             return args[0]
+        else:
+            raise Exception(f'Unknown tree type {type(tree)}')
 
     def interpret_nexpr(self, tree):
         if not isinstance(tree, RFPLParser.NexprContext):
