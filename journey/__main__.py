@@ -59,7 +59,7 @@ class CustomLexer(Lexer):
                     break
                 if tok.type == RFPLLexer.Unknown:
                     formatted.append(('class:error', tok.text))
-                elif tok.type == RFPLLexer.Comment or tok.type == RFPLLexer.String:
+                elif tok.type == RFPLLexer.Comment:
                     formatted.append(('class:comment', tok.text))
                 elif tok.type == RFPLLexer.Number or tok.text in ('!', '#', '@'):
                     formatted.append(('class:number', tok.text))

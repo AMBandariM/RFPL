@@ -50,11 +50,11 @@ class CustomLexer(Lexer):
                     break
                 if tok.type == RFPLLexer.Unknown:
                     formatted.append(('class:error', tok.text))
-                elif tok.type == RFPLLexer.Comment or tok.type == RFPLLexer.String:
+                elif tok.type == RFPLLexer.Comment:
                     formatted.append(('class:comment', tok.text))
                 elif tok.type == RFPLLexer.Number or tok.text in ('!', '#', '@'):
                     formatted.append(('class:number', tok.text))
-                elif tok.text in ('Cn', 'Pr', 'Mn', 'S', '#load'):
+                elif tok.text in ('Cn', 'Pr', 'Mn', 'S', ':load'):
                     formatted.append(('class:keyword', tok.text))
                 else:
                     formatted.append(('class:text', tok.text))

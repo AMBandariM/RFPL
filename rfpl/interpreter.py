@@ -8,6 +8,7 @@ from antlr4.error.Errors import ParseCancellationException
 from typing import Union, List, Dict, Tuple, Callable
 import random
 from enum import Enum
+from pathlib import Path
 
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
@@ -525,9 +526,6 @@ class Interpreter:
             raise Exception(f'Unknown node {type(tree)}')
         return basesz, nargs, nargs_base_dependencies, max_narg_for_base
     
-    def interpretString(self, text: str):
-        return text[1:-1].replace('\\\\', '\\').replace('\\"', '"').replace('\\\'', '\'')
-    
     def interpret(self, line: str) -> bool:
         self.has_error = False
 
@@ -587,8 +585,7 @@ class Interpreter:
             tree = tree.pragma()
             if tree.load() is not None:
                 tree = tree.load()
-                filename = self.interpretString(tree.String().getText())
-                return self.loadFile(filename)
+                return self.loadModule(tree.module().getText())
             else:
                 raise Exception(f'Unknown pragma {tree.getText()}')
         else:
@@ -607,21 +604,24 @@ class Interpreter:
         tree = parser.singleline()
         return not error_listener.has_unexpected_eof, tree
         
-    def loadFile(self, filename: str) -> bool:
-        if filename == 'basics':
+    def loadModule(self, module: str) -> bool:
+        if module == 'basics':
             names = self.loadBasics()
             self.addMessage(Message.info(
                 'Basic functions added: ' + ', '.join(names)
             ))
-            return True 
+            return True
+        path = Path('.')
+        for part in module.split('.'):
+            path = path / part
         try:
-            file = open(filename, 'r')
+            file = open(path, 'r')
         except OSError as e:
             try:
-                file = open(filename + '.rfpl', 'r')
-                filename += '.rfpl'
+                path = path.with_suffix('.rfpl')
+                file = open(path, 'r')
             except OSError as e:
-                self.addMessage(Message.error(f'Unable to open "{filename}": ' + e.strerror))
+                self.addMessage(Message.error(f'Unable to open "{path}": ' + e.strerror))
                 return False
         ok = True
         with file:
@@ -636,7 +636,7 @@ class Interpreter:
                     ok = False
                 cmd = ''
         self.addMessage(Message.info(
-            f'File "{filename}" loaded'
+            f'File "{path}" loaded'
         ))
         return ok
 

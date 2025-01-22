@@ -6,7 +6,8 @@ line          : define
               | examine
               | pragma ;
 pragma        : load ;
-load          : '#load' String ;
+load          : ':load' module ;
+module        : Symbol ('.' Symbol)* ;
 define        : Symbol '=' fexpr ;
 examine       : nexpr ;
 symbollist    : Symbol (',' Symbol)* ;
@@ -39,7 +40,6 @@ naturallist   : /* epsilon */
 // Lexer rules (start with uppercase)
 Number        : [0-9]+ ;
 Symbol        : [-a-zA-Z_][-a-zA-Z0-9_]* ;
-String        : '"' ( ~["\\] | '\\' ["'\\] )* '"' ;
 Whitespace    : [ \t\r\n]+ -> channel(HIDDEN) ;  // Skip whitespace
 Comment       : ';' ~[\n]* -> channel(HIDDEN) ;
 Unknown       : . ;
