@@ -320,13 +320,16 @@ class Interpreter:
     def interpret_fexpr(self, tree, blist: BaseList, args: NaturalList) -> Natural:
         tree = tree.getChild(0)
         if isinstance(tree, RFPLParser.FexprleafContext):
-            blistnxt = None
+            bnxt = None
             if tree.fexprlist() is not None:
-                fexprlist: RFPLParser.FexprlistContext = tree.fexprlist()
-                base_nxt = fexprlist.getTypedRuleContexts(RFPLParser.FexprContext)
-                blistnxt = BaseList(base_nxt, blist)
+                bnxt = BaseList([], None)
+                bnxt.args = tree.fexprlist().getTypedRuleContexts(RFPLParser.FexprContext)
+                for bexpr in bnxt.args:
+                    if bexpr.c_ftype.nbase > 0:
+                        bnxt.prev = blist
+                        break
             syment = tree.c_syment
-            return self.cache.call_and_cache(syment, blistnxt, args)
+            return self.cache.call_and_cache(syment, bnxt, args)
         elif isinstance(tree, RFPLParser.BracketContext):
             return self.interpret_fexpr(blist.args[tree.c_number], blist.prev, args)
         elif isinstance(tree, RFPLParser.IdentityContext):
@@ -390,11 +393,11 @@ class Interpreter:
         args = NaturalList(args)
         return self.interpret_fexpr(fexpr, None, args)
 
-    def preprocess(self, tree) -> FunctionType:
+    def preprocess(self, root) -> FunctionType:
         # to have consistent variable names, we will call the current tree as f
         ftype = FunctionType()
 
-        tree = tree.getChild(0)
+        tree = root.getChild(0)
         if isinstance(tree, RFPLParser.FexprleafContext):
             # assume f = g[gb0, gb1, ...]
             gbase = []
@@ -524,6 +527,7 @@ class Interpreter:
         else:
             raise Exception(f'Unknown node {type(tree)}')
 
+        root.c_ftype = ftype
         return ftype
     
     def interpret(self, line: str) -> bool:
