@@ -4,7 +4,7 @@ from .RFPLParser import RFPLParser
 
 primes = [2, 3, 5, 7]
 
-def getPrime(i):
+def get_prime(i):
     if i < len(primes):
         return primes[i]
     cur = primes[-1] + 1
@@ -30,48 +30,48 @@ class Natural:
             raise Exception(f'Cannot initialize natural with negative number {natural}')
         self.__natural: Union[int, List['Natural']] = natural
     
-    def isDefined(self):
+    def is_defined(self):
         return self.__natural is not None
 
-    def isZero(self):
+    def is_zero(self):
         return self.__natural == 0
     
-    def isOne(self):
+    def is_one(self):
         if isinstance(self.__natural, int):
             return self.__natural == 1
-        return self.isDefined() and all(x.isZero() for x in self.__natural)
+        return self.is_defined() and all(x.is_zero() for x in self.__natural)
     
-    def toInt(self):
-        if not self.isDefined():
+    def to_int(self):
+        if not self.is_defined():
             return -1
         if isinstance(self.__natural, int):
             return self.__natural
         num = 1
         for i, ent in enumerate(self.__natural):
-            num *= getPrime(i) ** ent.toInt()
+            num *= get_prime(i) ** ent.to_int()
         return num
     
     def simplify(self):
-        self.__natural = self.toInt()
+        self.__natural = self.to_int()
 
     def factor(self):
         if isinstance(self.__natural, list):
             return
-        if self.isZero() or not self.isDefined():
+        if self.is_zero() or not self.is_defined():
             raise Exception('Zero or undefined cannot be factored')
         cur = self.__natural
         self.__natural = []
         pi = 0
         while cur > 1:
             cnt = 0
-            while cur % getPrime(pi) == 0:
-                cur //= getPrime(pi)
+            while cur % get_prime(pi) == 0:
+                cur //= get_prime(pi)
                 cnt += 1
             self.__natural.append(Natural(cnt))
             pi += 1
     
     def copy(self):
-        if not self.isDefined():
+        if not self.is_defined():
             return Natural(None)
         if isinstance(self.__natural, int):
             return Natural(self.__natural)
@@ -80,21 +80,21 @@ class Natural:
             natural.append(nat.copy())
         return Natural(natural)
 
-    def getEntry(self, ind: 'Natural'):
-        if not self.isDefined() or not ind.isDefined():
+    def get_entry(self, ind: 'Natural'):
+        if not self.is_defined() or not ind.is_defined():
             return Natural(None)
-        ind = ind.toInt()
+        ind = ind.to_int()
         self.factor()
         if ind >= len(self.__natural):
             return Natural(0)
         return self.__natural[ind]
         
-    def setEntry(self, ind: 'Natural', nat: 'Natural'):
-        if not self.isDefined() or not ind.isDefined():
+    def set_entry(self, ind: 'Natural', nat: 'Natural'):
+        if not self.is_defined() or not ind.is_defined():
             return Natural(None)
         self.factor()
         result = self.copy()
-        ind = ind.toInt()
+        ind = ind.to_int()
         while len(result.__natural) <= ind:
             result.__natural.append(Natural(0))
         result.__natural[ind] = nat
@@ -113,25 +113,25 @@ class Natural:
         return Natural(None)
     
     def succ(self):
-        if not self.isDefined():
+        if not self.is_defined():
             return Natural(None)
-        return Natural(self.toInt() + 1)
+        return Natural(self.to_int() + 1)
     
     def __add__(self, other: 'Natural'):
-        if not self.isDefined() or not other.isDefined():
+        if not self.is_defined() or not other.is_defined():
             return Natural(None)
-        return Natural(self.toInt() + other.toInt())
+        return Natural(self.to_int() + other.to_int())
 
     def __sub__(self, other: 'Natural'):
-        if not self.isDefined() or not other.isDefined():
+        if not self.is_defined() or not other.is_defined():
             return Natural(None)
-        return Natural(max(self.toInt() - other.toInt(), 0))
+        return Natural(max(self.to_int() - other.to_int(), 0))
     
     def __mul__(self, other: 'Natural'):
-        if not self.isDefined() or not other.isDefined():
+        if not self.is_defined() or not other.is_defined():
             return Natural(None)
         if isinstance(self.__natural, int) or isinstance(other.__natural, int):
-            return Natural(self.toInt() * other.toInt())
+            return Natural(self.to_int() * other.to_int())
         a = self.__natural.copy()
         b = other.__natural.copy()
         if len(a) < len(b):
@@ -141,26 +141,26 @@ class Natural:
         return Natural(list(x + y for x, y in zip(a, b)))
 
     def __pow__(self, other: 'Natural'):
-        if not self.isDefined() or not other.isDefined():
+        if not self.is_defined() or not other.is_defined():
             return Natural(None)
-        if other.isZero():
+        if other.is_zero():
             return Natural(1)
-        if other.isOne():
+        if other.is_one():
             return Natural(self.__natural)
         if isinstance(self.__natural, int):
-            p = other.toInt()
+            p = other.to_int()
             return Natural(self.__natural ** p)
         return Natural(list(x * other for x in self.__natural))
 
     def __mod__(self, other: 'Natural'):
-        if not self.isDefined() or not other.isDefined():
+        if not self.is_defined() or not other.is_defined():
             return Natural(None)
-        if other.isZero():
+        if other.is_zero():
             return self
-        return Natural(self.toInt() % other.toInt())
+        return Natural(self.to_int() % other.to_int())
     
     def __repr__(self):
-        if not self.isDefined():
+        if not self.is_defined():
             return 'Undefined'
         if isinstance(self.__natural, int):
             return 'N({})'.format(self.__natural)
@@ -170,7 +170,7 @@ class Natural:
         return 'N<{}>'.format(', '.join(subreps))
     
     def __str__(self):
-        if not self.isDefined():
+        if not self.is_defined():
             return 'Undefined'
         if isinstance(self.__natural, int):
             return f'{self.__natural}'
@@ -179,13 +179,13 @@ class Natural:
             subreps.append(ent.__str__())
         return '<{}>'.format(', '.join(subreps))
 
-    def weirdHash(self):
+    def weird_hash(self):
         lst = ''
         if isinstance(self.__natural, int):
             lst += str(self.__natural) + '+'
         if isinstance(self.__natural, list):
             for nat in self.__natural:
-                lst += nat.weirdHash() + '+'
+                lst += nat.weird_hash() + '+'
         return hashlib.md5(lst.encode()).hexdigest()
 
 
@@ -207,7 +207,7 @@ class NaturalList:
         self.content[index] = value
 
     def __len__(self):
-        return len(content)
+        return len(self.content)
     
     def drop(self, nitem: int):
         if len(self.content) < nitem:

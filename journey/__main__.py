@@ -121,7 +121,7 @@ class SideNotes:
             self.content = content
     
     def __init__(self):
-        self.notes: List['Note'] = []
+        self.notes: List['SideNotes.Note'] = []
         self.session = PromptSession()
 
     def addNote(self, title, content):
@@ -306,7 +306,7 @@ class Challenge(Act):
             args = NaturalList(args)
             expected = challengeFunctions[self.target]['func'](args)
             actual = syment.call([], args)
-            if expected.toInt() != actual.toInt():
+            if expected.toInt() != actual.to_int():
                 typewriter(f'Oh, it\'s not working with input ({', '.join([str(n) for n in test])})')
                 return False
         typewriter(f'Congraduations!' if self.target else 'Good.')
@@ -316,7 +316,7 @@ class Challenge(Act):
         typewriter(self.banner)
         global intr
         intr = Interpreter()
-        intr.loadList(self.have)
+        intr.load_names(self.have)
         hist = ''
         while True:
             line = multiline_input()

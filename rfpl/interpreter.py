@@ -4,7 +4,6 @@ import traceback
 from antlr4 import *
 from dataclasses import dataclass, field
 from antlr4.error.ErrorListener import ErrorListener
-from antlr4.error.Errors import ParseCancellationException
 from typing import Union, List, Dict, Tuple, Callable
 import random
 from enum import Enum
@@ -51,12 +50,12 @@ class SymbolTable:
             return None
         return self.table[index]
     
-    def addEntry(self, entry: SymbolEntry):
+    def add_entry(self, entry: SymbolEntry):
         entry.ix = len(self.table)
         self.table.append(entry)
     
     def add(self, *args, **kwargs):
-        return self.addEntry(SymbolEntry(*args, **kwargs))
+        return self.add_entry(SymbolEntry(*args, **kwargs))
 
 
 class HashCache:
@@ -73,18 +72,18 @@ class HashCache:
         lst = ''
         started = False
         for arg in args.content[::-1]:
-            if not arg.isZero():
+            if not arg.is_zero():
                 started = True
             if started:
-                lst += arg.weirdHash() + '+'
+                lst += arg.weird_hash() + '+'
         return hashlib.md5(lst.encode()).hexdigest()
 
-    def makeMockNaturalList(self, n: int):
+    def make_mock_natural_list(self, n: int):
         m = int(n**0.5)
         a, b, c = random.randint(0,m), random.randint(0,m), random.randint(0,m)
         return NaturalList([Natural(a), Natural(b), Natural(c), Natural(None), Natural(None)])
 
-    def callAndCache(self, fun: SymbolEntry, blist: BaseList, args: List[Natural]):
+    def call_and_cache(self, fun: SymbolEntry, blist: BaseList, args: List[Natural]):
         if (blist is not None and len(blist.args)) or fun.builtin or not self.CACHE:
             return fun.call(blist, args)
         if fun.ix not in self.possibleMatches:
@@ -98,17 +97,17 @@ class HashCache:
             return self.cache[fun.ix][hsh]
         res = fun.call(blist, args)
         if self.possibleMatches[fun.ix]:
-            reshsh = res.weirdHash()
-            resnat = res.toInt()
+            reshsh = res.weird_hash()
+            resnat = res.to_int()
             for ent in self.possibleMatches[fun.ix]:
                 rel = ent.call(blist, args)
                 if rel.weirdHash() != reshsh and rel.toInt() != resnat:
                     self.possibleMatches[fun.ix].remove(ent)
-            mocknatlst = self.makeMockNaturalList(self.counter[fun.ix])
+            mocknatlst = self.make_mock_natural_list(self.counter[fun.ix])
             rez = fun.call(None, mocknatlst)
             for ent in self.possibleMatches[fun.ix]:
                 rel = ent.call(None, mocknatlst)
-                if rel.weirdHash() != rez.weirdHash() and rel.toInt() != rez.toInt():
+                if rel.weirdHash() != rez.weird_hash() and rel.toInt() != rez.to_int():
                     self.possibleMatches[fun.ix].remove(ent)
             if len(self.possibleMatches[fun.ix]):
                 self.counter[fun.ix] += 1
@@ -139,7 +138,7 @@ class Message:
         return cls(typ=MessageType.ERROR, message=message, **kwargs)
 
     @classmethod
-    def errorContext(cls, message: str, ctx: Union[ParserRuleContext, Token]):
+    def error_context(cls, message: str, ctx: Union[ParserRuleContext, Token]):
         result = cls.error(message)
         if isinstance(ctx, ParserRuleContext):
             result.start = ctx.start.start
@@ -157,7 +156,7 @@ class Message:
     def natural(cls, nat: Natural, **kwargs):
         return cls(typ=MessageType.NATURAL, natural=nat, **kwargs)
 
-    def addContext(self, inp: str):
+    def add_context(self, inp: str):
         if (self.start is None or self.stop is None 
             or inp is None or self.context is not None):
             return
@@ -172,7 +171,7 @@ class ReportErrorListener(ErrorListener):
         self.interpreter = interpreter
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        self.interpreter.addMessage(Message.errorContext(msg, offendingSymbol))
+        self.interpreter.add_message(Message.error_context(msg, offendingSymbol))
 
 
 class QuietErrorListener(ErrorListener):
@@ -195,26 +194,26 @@ class Interpreter:
             nargs=1
         )
         
-        def _getEntry(_blist, args):
-            if args[1].isZero():
+        def _get_entry(_blist, args):
+            if args[1].is_zero():
                 return Natural(0)
-            return args[1].getEntry(args[0])
+            return args[1].get_entry(args[0])
         
-        def _setEntry(_blist, args):
-            if args[2].isZero():
+        def _set_entry(_blist, args):
+            if args[2].is_zero():
                 return Natural(0)
-            return args[2].setEntry(args[0], args[1])
+            return args[2].set_entry(args[0], args[1])
         
         def _int(_blist, args):
             args[0].simplify()
             return args[0]
         
         def _list(_blist, args):
-            if args[0].isDefined() and not args[0].isZero():
+            if args[0].is_defined() and not args[0].is_zero():
                 args[0].factor()
             return args[0]
         
-        self.allBuitinFunctions = {
+        self.builtin_functions = {
             "Add": SymbolEntry(
                 symbol='Add',
                 call=lambda _blist, args : args[0] + args[1],
@@ -241,13 +240,13 @@ class Interpreter:
             ),
             "Get": SymbolEntry(
                 symbol='Get',
-                call=_getEntry,
+                call=_get_entry,
                 builtin=True,
                 nargs=2
             ),
             "Set": SymbolEntry(
                 symbol='Set',
-                call=_setEntry,
+                call=_set_entry,
                 builtin=True,
                 nargs=3
             ),
@@ -273,26 +272,26 @@ class Interpreter:
         self.basic_sequential_enteries = []
         self.basic_numbertheory_enteries = []
         self.cache = HashCache(
-            [self.allBuitinFunctions[name] for name in ["Add", "Sub", "Mul", "Pow", "Get", "Set", "Mod"]]
+            [self.builtin_functions[name] for name in ["Add", "Sub", "Mul", "Pow", "Get", "Set", "Mod"]]
         )
         self.messages: List[Message] = []
         self.has_error = False
 
-    def addMessage(self, msg: Message):
+    def add_message(self, msg: Message):
         self.messages.append(msg)
         if msg.typ in (MessageType.ERROR, MessageType.EXCEPTION):
             self.has_error = True
 
-    def loadList(self, names: List[str]):
+    def load_names(self, names: List[str]):
         for name in names:
-            self.symbol_table.addEntry(self.allBuitinFunctions[name])
+            self.symbol_table.add_entry(self.builtin_functions[name])
 
-    def loadBasics(self):
-        names = [name for name in self.allBuitinFunctions]
-        self.loadList(names)
+    def load_basics(self):
+        names = self.builtin_functions.keys()
+        self.load_names(names)
         return names
 
-    def interpretFexpr(self, tree, blist: BaseList, args: NaturalList) -> Natural:
+    def interpret_fexpr(self, tree, blist: BaseList, args: NaturalList) -> Natural:
         tree = tree.getChild(0)
         if isinstance(tree, RFPLParser.FexprleafContext):
             base_nxt = []
@@ -300,9 +299,9 @@ class Interpreter:
                 fexprlist: RFPLParser.FexprlistContext = tree.fexprlist()
                 base_nxt += fexprlist.getTypedRuleContexts(RFPLParser.FexprContext)
             syment = tree.c_syment
-            return self.cache.callAndCache(syment, BaseList(base_nxt, blist), args)
+            return self.cache.call_and_cache(syment, BaseList(base_nxt, blist), args)
         elif isinstance(tree, RFPLParser.BracketContext):
-            return self.interpretFexpr(blist.args[tree.c_number], blist.prev, args)
+            return self.interpret_fexpr(blist.args[tree.c_number], blist.prev, args)
         elif isinstance(tree, RFPLParser.IdentityContext):
             return args[tree.c_number]
         elif isinstance(tree, RFPLParser.ConstantContext):
@@ -311,34 +310,34 @@ class Interpreter:
             f, *gs = tree.fexprlist().getTypedRuleContexts(RFPLParser.FexprContext)
             fargs = []
             for g in gs:
-                gres = self.interpretFexpr(g, blist, args)
+                gres = self.interpret_fexpr(g, blist, args)
                 fargs.append(gres)
             fargs = NaturalList(fargs)
-            return self.interpretFexpr(f, blist, fargs)
+            return self.interpret_fexpr(f, blist, fargs)
         elif isinstance(tree, RFPLParser.BuiltinPrContext):
             f = tree.fexpr(0)
             g = tree.fexpr(1)
-            n = args[0].toInt()
+            n = args[0].to_int()
             args = args.drop(1)
-            cur = self.interpretFexpr(f, blist, args)
+            cur = self.interpret_fexpr(f, blist, args)
             args = NaturalList([Natural(None), Natural(None)]) + args
             for i in range(n):
                 args[0] = cur
                 args[1] = Natural(i)
-                cur = self.interpretFexpr(g, blist, args)
+                cur = self.interpret_fexpr(g, blist, args)
             return cur
         elif isinstance(tree, RFPLParser.BuiltinMnContext):
             f = tree.fexpr()
             args = NaturalList([Natural(0)]) + args
-            result = self.interpretFexpr(f, blist, args)
-            while result.isDefined() and not result.isZero():
+            result = self.interpret_fexpr(f, blist, args)
+            while result.is_defined() and not result.is_zero():
                 args[0] = args[0].succ()
-                result = self.interpretFexpr(f, blist, args)
-            if not result.isDefined():
+                result = self.interpret_fexpr(f, blist, args)
+            if not result.is_defined():
                 return Natural(None)
             return args[0]
 
-    def interpretNexpr(self, tree):
+    def interpret_nexpr(self, tree):
         if not isinstance(tree, RFPLParser.NexprContext):
             raise Exception('Tree must represent a nexpr, got {}'.format(type(tree)))
         if tree.natural() is not None:
@@ -347,22 +346,22 @@ class Interpreter:
         nexprlist: RFPLParser.NexprlistContext = tree.nexprlist()
         args = []
         for nexpr in nexprlist.getTypedRuleContexts(RFPLParser.NexprContext):
-            args.append(self.interpretNexpr(nexpr))
+            args.append(self.interpret_nexpr(nexpr))
         bs, na, _, _ = self.preprocess(fexpr)
         if bs > 0:
-            self.addMessage(Message.errorContext(
+            self.add_message(Message.error_context(
                 f'the function shouldn\'t need any bases!',
                 tree,
             ))
         elif na > len(args):
-            self.addMessage(Message.errorContext(
+            self.add_message(Message.error_context(
                 f'the function expects {na} arguments but got {len(args)}',
                 tree,
             ))
         if self.has_error:
             return Natural(None)
         args = NaturalList(args)
-        return self.interpretFexpr(fexpr, None, args)
+        return self.interpret_fexpr(fexpr, None, args)
 
     def preprocess(self, tree):
         basesz = 0
@@ -379,22 +378,21 @@ class Interpreter:
             symb = tree.Symbol().getText()
             syment = self.symbol_table.search(symb)
             if syment is None:
-                self.addMessage(Message.errorContext(f'Function {symb} is not defined', tree))
+                self.add_message(Message.error_context(f'Function {symb} is not defined', tree))
                 return basesz, nargs, nargs_base_dependencies, max_narg_for_base
             if len(base_nxt) != syment.basesz:
-                self.addMessage(Message.errorContext(
+                self.add_message(Message.error_context(
                     f'Function {symb} accepts {syment.basesz} bases but got {len(base_nxt)}',
                     tree,
                 ))
                 return basesz, nargs, nargs_base_dependencies, max_narg_for_base
-            # tree.children.append(syment)     ## so, do we need this? TODO 
             tree.c_syment = syment  # custom attribute added to the tree
             nargs = max(nargs, syment.nargs)
             for i, b in enumerate(base_nxt):
                 bs, na, nabd, mnab = self.preprocess(b)
                 if i in syment.max_narg_for_base.keys():
                     if na > syment.max_narg_for_base[i]:
-                        self.addMessage(Message.errorContext(
+                        self.add_message(Message.error_context(
                             f'Base no. {i+1} of function {syment.symbol} should get at most {syment.max_narg_for_base[i]} ' + 
                             f'arguments but got {na}',
                             tree,
@@ -406,7 +404,7 @@ class Interpreter:
                         else:
                             max_narg_for_base[j] = syment.max_narg_for_base[i] - nabd[j]
                         if max_narg_for_base[j] < 0:
-                            self.addMessage(Message.errorContext(
+                            self.add_message(Message.error_context(
                                 f'Some contradiction happend!',  ## I don't know what to say!
                                 tree,
                             ))
@@ -443,7 +441,7 @@ class Interpreter:
 
             ngs = len(gs)
             if ngs < na:
-                self.addMessage(Message.errorContext(
+                self.add_message(Message.error_context(
                     f'Function {f.getText()} needs at least {na} arguments but got {ngs}',
                     tree,
                 ))
@@ -455,7 +453,7 @@ class Interpreter:
                 else:
                     max_narg_for_base[j] = ngs - nabd[j]
                 if max_narg_for_base[j] < 0:
-                    self.addMessage(Message.errorContext(
+                    self.add_message(Message.error_context(
                         f'Some contradiction happend!',  ## I don't know what to say!
                         tree,
                     ))
@@ -558,7 +556,7 @@ class Interpreter:
             syment = self.symbol_table.search(symb)
             if syment is not None:
                 if syment.builtin:
-                    self.addMessage(Message.errorContext(
+                    self.add_message(Message.error_context(
                         f'Cannot redefine a builtin function {symb}',
                         tree.Symbol()
                     ))
@@ -566,26 +564,26 @@ class Interpreter:
                 msg.message = f'Function {symb} redefined'
             self.symbol_table.add(
                 symbol=symb,
-                call=lambda blist, args, fexpr=fexpr: self.interpretFexpr(fexpr, blist, args),
+                call=lambda blist, args, fexpr=fexpr: self.interpret_fexpr(fexpr, blist, args),
                 basesz = basesz,
                 nargs = nargs,
                 nargs_base_dependencies = nargs_base_dependencies,
                 max_narg_for_base = max_narg_for_base
             )
-            self.addMessage(msg)
+            self.add_message(msg)
             return True
         elif tree.examine() is not None:
             tree = tree.examine()
-            result = self.interpretNexpr(tree.nexpr())
+            result = self.interpret_nexpr(tree.nexpr())
             if self.has_error:
                 return False
-            self.addMessage(Message.natural(result))
+            self.add_message(Message.natural(result))
             return True
         elif tree.pragma() is not None:
             tree = tree.pragma()
             if tree.load() is not None:
                 tree = tree.load()
-                return self.loadModule(tree.module().getText())
+                return self.load_module(tree.module().getText())
             else:
                 raise Exception(f'Unknown pragma {tree.getText()}')
         else:
@@ -604,10 +602,10 @@ class Interpreter:
         tree = parser.singleline()
         return not error_listener.has_unexpected_eof, tree
         
-    def loadModule(self, module: str) -> bool:
+    def load_module(self, module: str) -> bool:
         if module == 'basics':
-            names = self.loadBasics()
-            self.addMessage(Message.info(
+            names = self.load_basics()
+            self.add_message(Message.info(
                 'Basic functions added: ' + ', '.join(names)
             ))
             return True
@@ -621,7 +619,7 @@ class Interpreter:
                 path = path.with_suffix('.rfpl')
                 file = open(path, 'r')
             except OSError as e:
-                self.addMessage(Message.error(f'Unable to open "{path}": ' + e.strerror))
+                self.add_message(Message.error(f'Unable to open "{path}": ' + e.strerror))
                 return False
         ok = True
         with file:
@@ -635,7 +633,7 @@ class Interpreter:
                 if not cmdok:
                     ok = False
                 cmd = ''
-        self.addMessage(Message.info(
+        self.add_message(Message.info(
             f'File "{path}" loaded'
         ))
         return ok
@@ -651,7 +649,7 @@ class Interpreter:
             ))
             ok = False
         for msg in self.messages:
-            msg.addContext(line)
+            msg.add_context(line)
         if clear:
             result = self.messages.copy()
             self.messages = []
