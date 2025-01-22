@@ -320,12 +320,13 @@ class Interpreter:
     def interpret_fexpr(self, tree, blist: BaseList, args: NaturalList) -> Natural:
         tree = tree.getChild(0)
         if isinstance(tree, RFPLParser.FexprleafContext):
-            base_nxt = []
+            blistnxt = None
             if tree.fexprlist() is not None:
                 fexprlist: RFPLParser.FexprlistContext = tree.fexprlist()
-                base_nxt += fexprlist.getTypedRuleContexts(RFPLParser.FexprContext)
+                base_nxt = fexprlist.getTypedRuleContexts(RFPLParser.FexprContext)
+                blistnxt = BaseList(base_nxt, blist)
             syment = tree.c_syment
-            return self.cache.call_and_cache(syment, BaseList(base_nxt, blist), args)
+            return self.cache.call_and_cache(syment, blistnxt, args)
         elif isinstance(tree, RFPLParser.BracketContext):
             return self.interpret_fexpr(blist.args[tree.c_number], blist.prev, args)
         elif isinstance(tree, RFPLParser.IdentityContext):
