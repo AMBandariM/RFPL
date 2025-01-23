@@ -106,7 +106,7 @@ if __name__ == '__main__':
             outstr = ''
             for fun in intr.symbol_table.table[::-1]:
                 if fun.symbol != 'S' and fun.symbol not in out:
-                    outstr = ' ' + fun.symbol + (f'[{fun.basesz}]' if fun.basesz else f'({fun.nargs})') + outstr
+                    outstr = ' ' + fun.symbol + (f'[{fun.ftype.nbase}]' if fun.ftype.nbase else f'({fun.ftype.narg})') + outstr
                     out.append(fun.symbol)
             print(ANSI(f'{C_ORANGE}..{outstr}{C_RESET}\n'))
             continue

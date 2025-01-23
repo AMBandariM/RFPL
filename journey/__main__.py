@@ -217,43 +217,43 @@ def __fib(n: int)->int:
 challengeFunctions = {
     '': {
         'func': lambda args : args[0],
-        'nargs': 1
+        'narg': 1
     },
     'z+3': {
         'func': lambda args : args[2] + Natural(3),
-        'nargs': 3
+        'narg': 3
     },
     'x+y': {
         'func': lambda args : args[0] + args[1],
-        'nargs': 2
+        'narg': 2
     },
     'y^x': {
         'func': lambda args : args[1] ** args[0],
-        'nargs': 2
+        'narg': 2
     },
     'y-x': {
         'func': lambda args : args[1] - args[0],
-        'nargs': 2
+        'narg': 2
     },
     'y/x': {
         'func': lambda args : Natural(args[0].toInt() // args[1].toInt()),
-        'nargs': 2
+        'narg': 2
     },
     'x%y': {
         'func': lambda args : args[0] % args[1],
-        'nargs': 2
+        'narg': 2
     },
     '|x-y|': {
         'func': lambda args : Natural(max(args[0].toInt() - args[1].toInt(), args[1].toInt() - args[0].toInt())),
-        'nargs': 2
+        'narg': 2
     },
     'GCD': {
         'func': lambda args : Natural(__gcd(args[0].toInt(), args[1].toInt())),
-        'nargs': 2
+        'narg': 2
     },
     'fib': {
         'func': lambda args : Natural(__fib(args[0].toInt())),
-        'nargs': 2
+        'narg': 2
     },
     
 }
@@ -293,10 +293,10 @@ class Challenge(Act):
         global intr
         syment = intr.symbol_table.table[-1]
         target = challengeFunctions[self.target]
-        if syment.nargs != target['nargs']:
-            typewriter(f'\'{self.target}\' gets {target['nargs']} arguments but \'{syment.symbol}\' gets {syment.nargs} arguments!')
+        if syment.ftype.narg != target['narg']:
+            typewriter(f'\'{self.target}\' gets {target['narg']} arguments but \'{syment.symbol}\' gets {syment.ftype.narg} arguments!')
             return False
-        if syment.basesz > 0:
+        if syment.ftype.nbase > 0:
             typewriter(f'\'{syment.symbol}\' is not a finished function.')
             return False
         for test in self.tests:
@@ -342,7 +342,7 @@ class Challenge(Act):
                 outstr = ''
                 for fun in intr.symbol_table.table[::-1]:
                     if fun.symbol != 'S' and fun.symbol not in out:
-                        outstr = ' ' + fun.symbol + (f'[{fun.basesz}]' if fun.basesz else f'({fun.nargs})') + outstr
+                        outstr = ' ' + fun.symbol + (f'[{fun.ftype.nbase}]' if fun.ftype.nbase else f'({fun.ftype.narg})') + outstr
                         out.append(fun.symbol)
                 print(f'{C_ORANGE}..{outstr}{C_RESET}\n')
                 continue

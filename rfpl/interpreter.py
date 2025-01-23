@@ -436,12 +436,6 @@ class Interpreter:
                         return ftype
                     for fj in gbtype.relative_narg_b:
                         dict_min_eq(ftype.max_narg_b, fj, gtype.max_narg_b[gi] - gbtype.relative_narg_b[fj])
-                        if ftype.max_narg_b[fj] < 0:
-                            self.add_message(Message.error_context(
-                                f'Base @{gi} of function {syment.symbol} is abusing base @{fj} of caller function',
-                                tree,
-                            ))
-                            return ftype
                 if gi in gtype.relative_narg_b:
                     ftype.narg = max(ftype.narg, gtype.relative_narg_b[gi] + gbtype.narg)
                     for fj in gbtype.relative_narg_b:
@@ -481,12 +475,6 @@ class Interpreter:
             
             for fj in htype.relative_narg_b:
                 dict_min_eq(ftype.max_narg_b, fj, ngs - htype.relative_narg_b[fj])
-                if ftype.max_narg_b[fj] < 0:
-                    self.add_message(Message.error_context(
-                        f'Function is abusing base @{fj}',  ## I don't know what to say!
-                        h,
-                    ))
-                    return ftype
             
             for g in gs:
                 gtype = self.preprocess(g)
