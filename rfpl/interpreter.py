@@ -12,33 +12,15 @@ from pathlib import Path
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
 from .natural import Natural, NaturalList
+from .symbol import BaseList, FunctionType, SymbolEntry
+
+from lib.basics import basics as basicRegistry
 
 DEBUG = True
 def debug(*args):
     if not DEBUG:
         return
     print(*args, file=sys.stderr)
-
-
-@dataclass
-class BaseList:
-    args: List[RFPLParser.FexprContext]
-    prev: 'BaseList' = None
-
-
-@dataclass
-class FunctionType:
-    narg: int = 0
-    nbase: int = 0
-    max_narg_b: Dict = field(default_factory=dict)
-    relative_narg_b: Dict = field(default_factory=dict)
-
-    # narg is the minimum number of argument this function needs, without considering bases.
-    # nbase is the number of base arguments (@0, @1, ...) this function uses.
-    # @i.narg <= max_narg_b[i]
-    # narg >= @i.narg + relative_narg_b[i]
-    # The dictionaries may not have a value for i, indicating @i is not mentioned in the function.
-    # Every fexpr has a type.
 
 
 def dict_min_eq(d: dict, k, v):
@@ -52,15 +34,6 @@ def dict_max_eq(d: dict, k, v):
         d[k] = v
     else:
         d[k] = max(d[k], v)
-
-
-@dataclass
-class SymbolEntry:
-    symbol: str
-    call: Callable[[BaseList, NaturalList], Natural]
-    builtin: bool = False
-    ix: int = -1
-    ftype: FunctionType = field(default_factory=FunctionType)
 
 
 class SymbolTable:
@@ -313,6 +286,9 @@ class Interpreter:
             self.symbol_table.add_entry(self.builtin_functions[name])
 
     def load_basics(self):
+        for syment in basicRegistry:
+            self.symbol_table.add_entry(basicRegistry[syment])
+        return basicRegistry.keys()
         names = self.builtin_functions.keys()
         self.load_names(names)
         return names
@@ -479,14 +455,14 @@ class Interpreter:
                         h,
                     ))
                     return ftype
+
+                for fj in htype.relative_narg_b:
+                    dict_min_eq(ftype.max_narg_b, fj, ngs - htype.relative_narg_b[fj])
+            
             else:
                 # ngs + ftype.narg - identityRest >= htype.narg
                 ftype.narg = max(0, htype.narg + identityRest - ngs)
-            
-            if identityRest is None:
-                for fj in htype.relative_narg_b:
-                    dict_min_eq(ftype.max_narg_b, fj, ngs - htype.relative_narg_b[fj])
-            else:
+
                 for fj in htype.relative_narg_b:
                     dict_max_eq(ftype.relative_narg_b, fj, htype.relative_narg_b[fj] + identityRest - ngs)
             
