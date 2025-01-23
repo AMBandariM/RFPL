@@ -21,7 +21,8 @@ fexpr         : fexprleaf
 fexprleaf     : Lazy? Symbol
               | Lazy? Symbol '[' fexprlist ']' ;
 fexprlist     : fexpr (',' fexpr)* ;
-builtinCn     : Lazy? 'Cn' '[' fexprlist ']' ;
+builtinCn     : Lazy? 'Cn' '[' fexprlist identityRest ']' ;
+identityRest  : ',' '!' Number '..' | ;
 builtinPr     : Lazy? 'Pr' '[' fexpr ',' fexpr ']' ;
 builtinMn     : Lazy? 'Mn' '[' fexpr ']' ;
 identity      : '!' Number ;

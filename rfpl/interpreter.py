@@ -344,6 +344,10 @@ class Interpreter:
             for g in gs:
                 gres = self.interpret_fexpr(g, blist, args)
                 fargs.append(gres)
+            identityRest = int(num.getText()) if (num := tree.identityRest().Number()) is not None else None
+            if identityRest is not None:
+                for i in range(identityRest, len(args.content)):
+                    fargs.append(args.content[i])
             fargs = NaturalList(fargs)
             return self.interpret_fexpr(f, blist, fargs)
         elif isinstance(tree, RFPLParser.BuiltinPrContext):
@@ -458,23 +462,33 @@ class Interpreter:
             tree.c_natural = Natural.interpret(tree.natural())
 
         elif isinstance(tree, RFPLParser.BuiltinCnContext):
-            # assume f = h[g0, g1, ...]
+            # assume f = Cn[h, g0, g1, ...]
             h, *gs = tree.fexprlist().getTypedRuleContexts(RFPLParser.FexprContext)
             htype = self.preprocess(h)
             for fj in htype.max_narg_b:
                 ftype.max_narg_b[fj] = htype.max_narg_b[fj]
             ftype.nbase = htype.nbase
 
+            identityRest = int(num.getText()) if (num := tree.identityRest().Number()) is not None else None
+
             ngs = len(gs)
-            if ngs < htype.narg:
-                self.add_message(Message.error_context(
-                    f'Function needs at least {htype.narg} arguments but got {ngs}',
-                    h,
-                ))
-                return ftype
+            if identityRest is None:
+                if ngs < htype.narg:
+                    self.add_message(Message.error_context(
+                        f'Function needs at least {htype.narg} arguments but got {ngs}',
+                        h,
+                    ))
+                    return ftype
+            else:
+                # ngs + ftype.narg - identityRest >= htype.narg
+                ftype.narg = max(0, htype.narg + identityRest - ngs)
             
-            for fj in htype.relative_narg_b:
-                dict_min_eq(ftype.max_narg_b, fj, ngs - htype.relative_narg_b[fj])
+            if identityRest is None:
+                for fj in htype.relative_narg_b:
+                    dict_min_eq(ftype.max_narg_b, fj, ngs - htype.relative_narg_b[fj])
+            else:
+                for fj in htype.relative_narg_b:
+                    dict_max_eq(ftype.relative_narg_b, fj, htype.relative_narg_b[fj] + identityRest - ngs)
             
             for g in gs:
                 gtype = self.preprocess(g)
