@@ -124,14 +124,14 @@ class SideNotes:
         self.notes: List['SideNotes.Note'] = []
         self.session = PromptSession()
 
-    def addNote(self, title, content):
+    def add_note(self, title, content):
         for note in self.notes:
             if note.title == title:
                 note.content += '\n' + content
                 return
         self.notes.append(self.Note(title, content))
 
-    def printNote(self, index):
+    def print_note(self, index):
         print('#'*5 + ' ' + self.notes[index].title + ' ' + '#'*5)
         print(self.notes[index].content)
         print()
@@ -151,7 +151,7 @@ class SideNotes:
                 return
             try:
                 cmd = int(cmd)
-                self.printNote(cmd)
+                self.print_note(cmd)
             except ValueError:
                 pass
 
@@ -198,7 +198,7 @@ class UserGuide(Act):
                 self.journey.username = self.session.prompt('>> ')
                 print()
             elif job['type'] == 'sidenote':
-                self.journey.sidenotes.addNote(title=job['title'], content=job['content'])
+                self.journey.sidenotes.add_note(title=job['title'], content=job['content'])
         self.done = True
 
 
@@ -269,18 +269,18 @@ class Challenge(Act):
         self.hintcounter: int = 0
         self.banner = banner
 
-    def collectUsedRules(self, tree, usedRules):
+    def collect_used_rules(self, tree, usedRules):
         if isinstance(tree, ParserRuleContext):
             rule_name = tree.parser.ruleNames[tree.getRuleIndex()]
             usedRules.add(rule_name)
         for i in range(tree.getChildCount()):
             child = tree.getChild(i)
-            self.collectUsedRules(child, usedRules)
+            self.collect_used_rules(child, usedRules)
 
     def crosslimit(self):
         translate = {'define': '=', 'bracket': '@', 'naturallist': '< >', 'builtinCn': 'Cn', 'builtinPr': 'Pr', 'builtinMn': 'Mn'}
         usedRules = set()
-        self.collectUsedRules(lastTree, usedRules)
+        self.collect_used_rules(lastTree, usedRules)
         for element in usedRules:
             if element in self.limits:
                 if element in translate.keys():
@@ -364,7 +364,7 @@ class Challenge(Act):
                     print(f' {C_RED}* EXCEPTION: {msg.message}{C_RESET}')
             print()
         if self.target:
-            self.journey.sidenotes.addNote(title=f'{self.starter}::solution ({self.target})', content=hist.strip())
+            self.journey.sidenotes.add_note(title=f'{self.starter}::solution ({self.target})', content=hist.strip())
         self.done = True
 
 
