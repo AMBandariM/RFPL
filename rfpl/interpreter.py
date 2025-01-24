@@ -535,13 +535,17 @@ class Interpreter:
                 obj = cls(self)
                 entries = obj.export_symbols()
                 for ent in entries:
+                    prvent = self.symbol_table.search(ent.symbol)
+                    if prvent is not None and prvent.builtin:
+                        self.add_message(Message.error(f'Cannot redefine a builtin function {ent.symbol}'))
+                        continue
                     self.symbol_table.add_entry(ent)
                     names.append(ent.symbol)
         if not names:
             self.add_message(Message.error(f'Unable to find RFPY module in "{path}"'))
             return False
         self.add_message(Message.info(f'Added RFPY functions: ' + ', '.join(names)))
-        return True
+        return not self.has_error
 
     def load_module(self, module: str) -> bool:
         for start in ('.', LIB_PATH):

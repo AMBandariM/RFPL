@@ -9,7 +9,6 @@ class ExportInfo:
     name: str
     narg: int
     nbase: int = 0
-    builtin: bool = False
 
 
 class RFPYModule:
@@ -29,7 +28,6 @@ class RFPYModule:
                 symbols.append(SymbolEntry(
                     symbol=exp.name,
                     call=call,
-                    builtin=exp.builtin,
                     ftype=FunctionType(narg=exp.narg, nbase=exp.nbase)
                 ))
         return symbols
@@ -38,15 +36,14 @@ class RFPYModule:
         return self.interpreter.interpret_fexpr(blist.args[ix], blist.prev, args)
 
 
-def define(*, narg, name=None, nbase=0, builtin=False):
+def define(*, narg, name=None, nbase=0):
     def decorator(func: Callable):
-        nonlocal narg, name
+        nonlocal name
         name = name or func.__name__
         func.c_export = ExportInfo(
             name=name,
             narg=narg,
             nbase=nbase,
-            builtin=builtin,
         )
         return func
     return decorator
