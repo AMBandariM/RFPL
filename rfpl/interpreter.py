@@ -554,8 +554,10 @@ class Interpreter:
                 return self.load_rfpl_module(finalpath)
             elif (finalpath := path / (filename + '.rfpy')).is_file():
                 return self.load_rfpy_module(str(finalpath), str(filename), listname)
+            elif (finalpath := path / (filename + '.py')).is_file():
+                return self.load_rfpy_module(str(finalpath), str(filename), listname)
             elif (finalpath := path / (filename)).is_file():
-                return self.load_rfpl_module(finalpath)
+                return self.load_rfpy_module(finalpath) if str(finalpath).endswith('py') else self.load_rfpl_module(finalpath)
         self.add_message(Message.error(f'Unable to find "{module}"'))
         return False
 
