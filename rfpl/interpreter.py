@@ -1,4 +1,6 @@
 import sys
+import importlib.util
+from importlib.machinery import SourceFileLoader
 import hashlib
 import traceback
 from antlr4 import *
@@ -12,34 +14,16 @@ from pathlib import Path
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
 from .natural import Natural, NaturalList
+from .symbol import BaseList, FunctionType, SymbolEntry
 
 DEBUG = True
+LIB_PATH = './lib'
+
+
 def debug(*args):
     if not DEBUG:
         return
     print(*args, file=sys.stderr)
-
-
-@dataclass
-class BaseList:
-    args: List[RFPLParser.FexprContext]
-    prev: 'BaseList' = None
-
-
-@dataclass
-class FunctionType:
-    narg: int = 0
-    nbase: int = 0
-    max_narg_b: Dict = field(default_factory=dict)
-    relative_narg_b: Dict = field(default_factory=dict)
-
-    # narg is the minimum number of argument this function needs, without considering bases.
-    # nbase is the number of base arguments (@0, @1, ...) this function uses.
-    # @i.narg <= max_narg_b[i]
-    # narg >= @i.narg + relative_narg_b[i]
-    # The dictionaries may not have a value for i, indicating @i is not mentioned in the function.
-    # Every fexpr has a type.
-
 
 def dict_min_eq(d: dict, k, v):
     if k not in d:
@@ -52,15 +36,6 @@ def dict_max_eq(d: dict, k, v):
         d[k] = v
     else:
         d[k] = max(d[k], v)
-
-
-@dataclass
-class SymbolEntry:
-    symbol: str
-    call: Callable[[BaseList, NaturalList], Natural]
-    builtin: bool = False
-    ix: int = -1
-    ftype: FunctionType = field(default_factory=FunctionType)
 
 
 class SymbolTable:
@@ -219,87 +194,8 @@ class Interpreter:
             ftype=FunctionType(narg=1),
         )
         
-        def _get_entry(_blist, args):
-            if args[1].is_zero():
-                return Natural(0)
-            return args[1].get_entry(args[0])
-        
-        def _set_entry(_blist, args):
-            if args[2].is_zero():
-                return Natural(0)
-            return args[2].set_entry(args[0], args[1])
-        
-        def _int(_blist, args):
-            args[0].simplify()
-            return args[0]
-        
-        def _list(_blist, args):
-            if args[0].is_defined() and not args[0].is_zero():
-                args[0].factor()
-            return args[0]
-        
-        self.builtin_functions = {
-            "Add": SymbolEntry(
-                symbol='Add',
-                call=lambda _blist, args : args[0] + args[1],
-                builtin=True,
-                ftype=FunctionType(narg=2),
-            ),
-            "Sub": SymbolEntry(
-                symbol='Sub',
-                call=lambda _blist, args : args[1] - args[0],
-                builtin=True,
-                ftype=FunctionType(narg=2),
-            ),
-            "Mul": SymbolEntry(
-                symbol='Mul',
-                call=lambda _blist, args : args[0] * args[1],
-                builtin=True,
-                ftype=FunctionType(narg=2),
-            ),
-            "Pow": SymbolEntry(
-                symbol='Pow',
-                call=lambda _blist, args : args[1] ** args[0],
-                builtin=True,
-                ftype=FunctionType(narg=2),
-            ),
-            "Get": SymbolEntry(
-                symbol='Get',
-                call=_get_entry,
-                builtin=True,
-                ftype=FunctionType(narg=2),
-            ),
-            "Set": SymbolEntry(
-                symbol='Set',
-                call=_set_entry,
-                builtin=True,
-                ftype=FunctionType(narg=3),
-            ),
-            "Int": SymbolEntry(
-                symbol='Int',
-                call=_int,
-                builtin=True,
-                ftype=FunctionType(narg=1),
-            ),
-            "List": SymbolEntry(
-                symbol='List',
-                call=_list,
-                builtin=True,
-                ftype=FunctionType(narg=1),
-            ),
-            "Mod": SymbolEntry(
-                symbol='Mod',
-                call=lambda _blist, args : args[0] % args[1],
-                builtin=True,
-                ftype=FunctionType(narg=2),
-            ),
-        }
-        self.basic_arithmetic_enteries = []
-        self.basic_sequential_enteries = []
-        self.basic_numbertheory_enteries = []
-        self.cache = HashCache(
-            [self.builtin_functions[name] for name in ["Add", "Sub", "Mul", "Pow", "Get", "Set", "Mod"]]
-        )
+        self.cache = HashCache([])  # add the funcions here
+
         self.messages: List[Message] = []
         self.has_error = False
 
@@ -307,15 +203,6 @@ class Interpreter:
         self.messages.append(msg)
         if msg.typ in (MessageType.ERROR, MessageType.EXCEPTION):
             self.has_error = True
-
-    def load_names(self, names: List[str]):
-        for name in names:
-            self.symbol_table.add_entry(self.builtin_functions[name])
-
-    def load_basics(self):
-        names = self.builtin_functions.keys()
-        self.load_names(names)
-        return names
 
     def interpret_fexpr(self, root, blist: BaseList, args: NaturalList, strict: bool = False) -> Natural:
         tree = root.getChild(0)
@@ -344,6 +231,10 @@ class Interpreter:
             for g in gs:
                 gres = self.interpret_fexpr(g, blist, args)
                 fargs.append(gres)
+            identityRest = int(num.getText()) if (num := tree.identityRest().Number()) is not None else None
+            if identityRest is not None:
+                for i in range(identityRest, len(args.content)):
+                    fargs.append(args.content[i])
             fargs = NaturalList(fargs)
             return self.interpret_fexpr(f, blist, fargs)
         elif isinstance(tree, RFPLParser.BuiltinPrContext):
@@ -458,23 +349,33 @@ class Interpreter:
             tree.c_natural = Natural.interpret(tree.natural())
 
         elif isinstance(tree, RFPLParser.BuiltinCnContext):
-            # assume f = h[g0, g1, ...]
+            # assume f = Cn[h, g0, g1, ...]
             h, *gs = tree.fexprlist().getTypedRuleContexts(RFPLParser.FexprContext)
             htype = self.preprocess(h)
             for fj in htype.max_narg_b:
                 ftype.max_narg_b[fj] = htype.max_narg_b[fj]
             ftype.nbase = htype.nbase
 
+            identityRest = int(num.getText()) if (num := tree.identityRest().Number()) is not None else None
+
             ngs = len(gs)
-            if ngs < htype.narg:
-                self.add_message(Message.error_context(
-                    f'Function needs at least {htype.narg} arguments but got {ngs}',
-                    h,
-                ))
-                return ftype
+            if identityRest is None:
+                if ngs < htype.narg:
+                    self.add_message(Message.error_context(
+                        f'Function needs at least {htype.narg} arguments but got {ngs}',
+                        h,
+                    ))
+                    return ftype
+
+                for fj in htype.relative_narg_b:
+                    dict_min_eq(ftype.max_narg_b, fj, ngs - htype.relative_narg_b[fj])
             
-            for fj in htype.relative_narg_b:
-                dict_min_eq(ftype.max_narg_b, fj, ngs - htype.relative_narg_b[fj])
+            else:
+                # ngs + ftype.narg - identityRest >= htype.narg
+                ftype.narg = max(0, htype.narg + identityRest - ngs)
+
+                for fj in htype.relative_narg_b:
+                    dict_max_eq(ftype.relative_narg_b, fj, htype.relative_narg_b[fj] + identityRest - ngs)
             
             for g in gs:
                 gtype = self.preprocess(g)
@@ -596,26 +497,13 @@ class Interpreter:
         parser.addErrorListener(error_listener)
         tree = parser.singleline()
         return not error_listener.has_unexpected_eof, tree
-        
-    def load_module(self, module: str) -> bool:
-        if module == 'basics':
-            names = self.load_basics()
-            self.add_message(Message.info(
-                'Basic functions added: ' + ', '.join(names)
-            ))
-            return True
-        path = Path('.')
-        for part in module.split('.'):
-            path = path / part
+    
+    def load_rfpl_module(self, path: Path) -> bool:
         try:
             file = open(path, 'r')
         except OSError as e:
-            try:
-                path = path.with_suffix('.rfpl')
-                file = open(path, 'r')
-            except OSError as e:
-                self.add_message(Message.error(f'Unable to open "{path}": ' + e.strerror))
-                return False
+            self.add_message(Message.error(f'Unable to open "{path}": ' + e.strerror))
+            return False
         ok = True
         with file:
             lines = file.readlines()
@@ -632,6 +520,46 @@ class Interpreter:
             f'File "{path}" loaded'
         ))
         return ok
+
+    def load_rfpy_module(self, path: str, filename: str, listname: str) -> bool:
+        loader = SourceFileLoader(filename, path)
+        spec = importlib.util.spec_from_file_location(filename, loader=loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        if hasattr(module, listname):
+            funcs = getattr(module, listname)
+            for func in funcs:
+                self.symbol_table.add_entry(funcs[func])
+            self.add_message(Message.info('Fast functions added: ' + ', '.join(funcs.keys())))
+            return True
+        else:
+            self.add_message(Message.error(f'The module at "{path}" does not contain a dictionary named "{listname}".'))
+            return False
+
+    def load_module(self, module: str) -> bool:
+        for start in ['.', LIB_PATH]:
+            path = Path(start)
+            i, parts = 0, module.split('.')
+            curdir = ''
+            while i < len(parts) - 1:
+                curdir = curdir + '.' + parts[i] if curdir else parts[i]
+                if (path / curdir).is_dir():
+                    path = path / curdir
+                    curdir = ''
+                i += 1
+            listname = parts[i]
+            filename = '.'.join(parts[i:])
+            if (finalpath := path / (filename + '.rfpl')).is_file():
+                return self.load_rfpl_module(finalpath)
+            elif (finalpath := path / (filename + '.rfpy')).is_file():
+                return self.load_rfpy_module(str(finalpath), str(filename), listname)
+            elif (finalpath := path / (filename + '.py')).is_file():
+                return self.load_rfpy_module(str(finalpath), str(filename), listname)
+            elif (finalpath := path / (filename)).is_file():
+                return self.load_rfpy_module(finalpath) if str(finalpath).endswith('py') else self.load_rfpl_module(finalpath)
+        self.add_message(Message.error(f'Unable to find "{module}"'))
+        return False
 
     def report(self, line: str, clear: bool = True) -> Tuple[bool, List[Message]]:
         line = line.strip()
