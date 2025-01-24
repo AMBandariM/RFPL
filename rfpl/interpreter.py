@@ -10,11 +10,13 @@ from typing import Union, List, Dict, Tuple, Callable
 import random
 from enum import Enum
 from pathlib import Path
+import inspect
 
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
 from .natural import Natural, NaturalList
 from .symbol import BaseList, FunctionType, SymbolEntry
+from .rfpy import RFPYModule
 
 DEBUG = True
 LIB_PATH = './lib'
@@ -521,43 +523,40 @@ class Interpreter:
         ))
         return ok
 
-    def load_rfpy_module(self, path: str, filename: str, listname: str) -> bool:
-        loader = SourceFileLoader(filename, path)
-        spec = importlib.util.spec_from_file_location(filename, loader=loader)
+    def load_rfpy_module(self, path: Path) -> bool:
+        loader = SourceFileLoader(path.stem, str(path))
+        spec = importlib.util.spec_from_file_location(path.stem, path, loader=loader)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-
-        if hasattr(module, listname):
-            funcs = getattr(module, listname)
-            for func in funcs:
-                self.symbol_table.add_entry(funcs[func])
-            self.add_message(Message.info('Fast functions added: ' + ', '.join(funcs.keys())))
-            return True
-        else:
-            self.add_message(Message.error(f'The module at "{path}" does not contain a dictionary named "{listname}".'))
+        names = []
+        for name in dir(module):
+            cls = getattr(module, name)
+            if inspect.isclass(cls) and issubclass(cls, RFPYModule):
+                obj = cls(self)
+                entries = obj.export_symbols()
+                for ent in entries:
+                    self.symbol_table.add_entry(ent)
+                    names.append(ent.symbol)
+        if not names:
+            self.add_message(Message.error(f'Unable to find RFPY module in "{path}"'))
             return False
+        self.add_message(Message.info(f'Added RFPY functions: ' + ', '.join(names)))
+        return True
 
     def load_module(self, module: str) -> bool:
-        for start in ['.', LIB_PATH]:
+        for start in ('.', LIB_PATH):
             path = Path(start)
-            i, parts = 0, module.split('.')
-            curdir = ''
-            while i < len(parts) - 1:
-                curdir = curdir + '.' + parts[i] if curdir else parts[i]
-                if (path / curdir).is_dir():
-                    path = path / curdir
-                    curdir = ''
-                i += 1
-            listname = parts[i]
-            filename = '.'.join(parts[i:])
-            if (finalpath := path / (filename + '.rfpl')).is_file():
-                return self.load_rfpl_module(finalpath)
-            elif (finalpath := path / (filename + '.rfpy')).is_file():
-                return self.load_rfpy_module(str(finalpath), str(filename), listname)
-            elif (finalpath := path / (filename + '.py')).is_file():
-                return self.load_rfpy_module(str(finalpath), str(filename), listname)
-            elif (finalpath := path / (filename)).is_file():
-                return self.load_rfpy_module(finalpath) if str(finalpath).endswith('py') else self.load_rfpl_module(finalpath)
+            for part in module.split('.'):
+                path = path / part
+            if (modpath := path.with_suffix('.rfpy')).is_file():
+                return self.load_rfpy_module(modpath)
+            if (modpath := path.with_suffix('.py')).is_file():
+                return self.load_rfpy_module(modpath)
+            if (modpath := path.with_suffix('.rfpl')).is_file():
+                return self.load_rfpl_module(modpath)
+            if path.is_file():
+                # defaults to rfpl to avoid mistakenly importing non python file
+                return self.load_rfpl_module(path)
         self.add_message(Message.error(f'Unable to find "{module}"'))
         return False
 
