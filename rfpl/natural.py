@@ -31,7 +31,7 @@ class Natural:
         self.__natural = natural
 
     def normalize(self):
-        if callable(self.__natural):
+        while callable(self.__natural):
             self.__natural = self.__natural().__natural
     
     def is_defined(self):
@@ -86,6 +86,14 @@ class Natural:
         for nat in self.__natural:
             natural.append(nat.copy())
         return Natural(natural)
+    
+    def trim(self):
+        if not self.is_defined():
+            return
+        if not isinstance(self.__natural, list):
+            return
+        while len(self.__natural) > 0 and self.__natural[-1].is_zero():
+            self.__natural.pop()
 
     def get_entry(self, ind: 'Natural'):
         if not self.is_defined() or not ind.is_defined():
@@ -105,6 +113,7 @@ class Natural:
         while len(result.__natural) <= ind:
             result.__natural.append(Natural(0))
         result.__natural[ind] = nat
+        result.trim()
         return result
     
     @staticmethod
@@ -166,6 +175,16 @@ class Natural:
             return self
         return Natural(self.to_int() % other.to_int())
     
+    def __eq__(self, other: 'Natural'):
+        if not self.is_defined() or not other.is_defined():
+            # two undefineds are not equal
+            return False
+        if isinstance(self.__natural, list) and isinstance(other.__natural, list):
+            self.trim()
+            other.trim()
+            return self.__natural == other.__natural
+        return self.to_int() == other.to_int()
+    
     def __repr__(self):
         if not self.is_defined():
             return 'Undefined'
@@ -192,8 +211,8 @@ class Natural:
 
 
 class NaturalList:
-    def __init__(self, content: List[Natural]=[]):
-        self.content = content
+    def __init__(self, content: List[Natural]=None):
+        self.content = content or []
 
     def copy(self):
         return NaturalList(self.content.copy())

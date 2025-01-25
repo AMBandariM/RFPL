@@ -1,4 +1,7 @@
-from rfpl.natural import Natural
+import sys
+sys.setrecursionlimit(1000000)
+
+from rfpl.natural import Natural, NaturalList
 from rfpl.rfpy import RFPYModule, define
 
 class Basics(RFPYModule):
@@ -46,3 +49,40 @@ class Basics(RFPYModule):
     @define(narg=2)
     def Mod(self, args):
         return args[0] % args[1]
+    
+    @define(narg=1)
+    def IsZero(self, args):
+        if args[0].is_zero():
+            return Natural(1)
+        return Natural(0)
+    
+    @define(narg=1)
+    def IsOne(self, args):
+        if args[0].is_one():
+            return Natural(1)
+        return Natural(0)
+    
+    @define(narg=2)
+    def Equal(self, args):
+        if args[0] == args[1]:
+            return Natural(1)
+        return Natural(0)
+
+    @define(narg=1, nbase=2)
+    def Foldr(self, blist, args):
+        # EXPERIMENTAL
+        # to be discussed later: basically every function can be modeled as an infinite list:
+        # f(0, xs..), f(1, xs..), f(2, xs..), ... a list for every xs
+        # Pr is the strict left fold function, starting from f(0, ..).
+        # This function (Foldr) is the lazy right fold equivalent of Pr.
+        # If we allowed recursive definitions, this function could be written in rfpl.
+        n = args[0]
+        args = args.drop(1)
+        if n.is_zero():
+            return self.call_base(blist, 0, args)
+        n = Natural(n.to_int() - 1)
+        args = NaturalList([
+            Natural(lambda args=args : self.Foldr(blist, NaturalList([n]) + args)),
+            n
+        ]) + args
+        return self.call_base(blist, 1, args)        

@@ -1,0 +1,19 @@
+load basics
+
+not = IsZero
+bool = Cn[not, not]
+if = Cn[Pr[~@2, Cn[@1, !2..]], Cn[bool, @0], !0..]
+and = if[!0, if[!1, #1, #0], #0]
+or = if[!0, #1, if[!1, #1, #0]]
+xor = if[!0, Cn[not, !1], !1]
+xnor = Cn[not, xor]
+
+sgn = bool
+neq = Cn[not, Equal]
+leq = Cn[IsZero, Cn[Sub, !1, !0]]
+lt = Cn[sgn, Cn[Sub, !0, !1]]
+geq = Cn[not, lt]
+gt = Cn[not, leq]
+
+max = if[lt, !1, !0]
+min = if[lt, !0, !1]
