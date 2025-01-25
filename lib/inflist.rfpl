@@ -1,0 +1,47 @@
+load logic
+load stack
+
+; head[list]
+head = Cn[@0, #0, !0..]
+
+; tail[list] -> list
+tail = Cn[@0, Cn[S, !0], !1..]
+
+; cons[value, list] -> list
+cons = if[Cn[IsZero, !0], Cn[@0, !1..], Cn[@1, Cn[Sub, #1, !0], !1..]]
+
+; foldl[list, init, binop] -> list
+foldl = Pr[@1, Cn[@2, !0, ~Cn[@0, !1, !2..]]]
+foldlz = Foldr[@1, Cn[@2, !0, ~Cn[@0, !1, !2..]]]
+
+; foldr[list, init, binop] -> list
+reverse = Cn[@0, Cn[Sub, !0, !1], !2..]
+flip = Cn[@0, !1, !0]
+pred = Cn[Sub, #1, !0]
+foldr = Cn[foldl[reverse[@0], @1, flip[@2]], !0, Cn[pred, !0], !1..]
+foldrz = Cn[foldlz[reverse[@0], @1, flip[@2]], !0, Cn[pred, !0], !1..]
+
+; scanl[list] -> list
+scanl = foldl[@0, empty, append]
+scanr = foldr[@0, empty, flip[append]]
+
+; combine[binop, list, list] -> list
+combine = Cn[@0, @1, @2]
+
+; imap[op, list] -> list
+imap = Cn[@0, @1]
+
+; forall[R](u, xs...) = forall v < u. R(v, xs...)
+forall = foldrz[@0, #1, and]
+
+; exists[R](u, xs...) = exists v < u. R(v, xs...)
+exists = foldrz[@0, #0, or]
+
+; example
+; load parsa-fib
+; fibs = imap[get0, fib]
+; scanl[fibs](10)
+; or in reverse
+; scanr[fibs](10)
+; foldl[fibs, #0, Add](10) ; equal fibs(0) + fibs(1) + ... fibs(9)
+; scanl[scanr[fibs]](10)

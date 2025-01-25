@@ -1,18 +1,14 @@
 from prompt_toolkit import PromptSession, ANSI
 from prompt_toolkit.patch_stdout import patch_stdout
-from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.styles import Style
 import re
 import os
 from prompt_toolkit import print_formatted_text as print
 import antlr4
-from antlr4.error.ErrorListener import ErrorListener
 
 from .RFPLLexer import RFPLLexer
-from .RFPLParser import RFPLParser
 from .interpreter import Interpreter, Message, MessageType
-from .natural import Natural
 
 
 def check_grammar(cmd, superc=True):
@@ -54,7 +50,7 @@ class CustomLexer(Lexer):
                     formatted.append(('class:comment', tok.text))
                 elif tok.type == RFPLLexer.Number or tok.text in ('!', '#', '@'):
                     formatted.append(('class:number', tok.text))
-                elif tok.text in ('Cn', 'Pr', 'Mn', 'S', ':load'):
+                elif tok.text in ('Cn', 'Pr', 'Mn', 'S', 'load'):
                     formatted.append(('class:keyword', tok.text))
                 else:
                     formatted.append(('class:text', tok.text))
