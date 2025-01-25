@@ -1,6 +1,5 @@
 load logic
 load stack
-load parsa-fib
 
 ; head[list]
 head = Cn[@0, #0, !0..]
@@ -38,6 +37,9 @@ forall = foldrz[@0, #1, and]
 exists = foldrz[@0, #0, or]
 
 ; example
-; show[imap[get0, fib]](10)
+; load parsa-fib
+; fibs = imap[get0, fib]
+; show[fibs](10)
 ; or in reverse
-; foldr[imap[get0, fib], empty, flip[append]](10)
+; foldr[fibs, empty, flip[append]](10)
+; foldl[fibs, #0, Add](10) ; equal fibs(0) + fibs(1) + ... fibs(9)
