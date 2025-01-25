@@ -6,7 +6,7 @@ line          : define
               | examine
               | pragma ;
 pragma        : load ;
-load          : ':load' module ;
+load          : 'load' module ;
 module        : Symbol ('.' Symbol)* ;
 define        : Symbol '=' fexpr ;
 examine       : nexpr ;
