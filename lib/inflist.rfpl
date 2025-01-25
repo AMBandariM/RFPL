@@ -21,8 +21,9 @@ pred = Cn[Sub, #1, !0]
 foldr = Cn[foldl[reverse[@0], @1, flip[@2]], !0, Cn[pred, !0], !1..]
 foldrz = Cn[foldlz[reverse[@0], @1, flip[@2]], !0, Cn[pred, !0], !1..]
 
-; show[list] -> list
-show = foldl[@0, empty, append]
+; scanl[list] -> list
+scanl = foldl[@0, empty, append]
+scanr = foldr[@0, empty, flip[append]]
 
 ; combine[binop, list, list] -> list
 combine = Cn[@0, @1, @2]
@@ -39,7 +40,8 @@ exists = foldrz[@0, #0, or]
 ; example
 ; load parsa-fib
 ; fibs = imap[get0, fib]
-; show[fibs](10)
+; scanl[fibs](10)
 ; or in reverse
-; foldr[fibs, empty, flip[append]](10)
+; scanr[fibs](10)
 ; foldl[fibs, #0, Add](10) ; equal fibs(0) + fibs(1) + ... fibs(9)
+; scanl[scanr[fibs]](10)
