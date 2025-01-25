@@ -42,6 +42,7 @@ def dict_max_eq(d: dict, k, v):
 
 class SymbolTable:
     def __init__(self):
+        self.temp_layer = [[]]
         self.table: List[SymbolEntry] = []
     
     def search(self, symbol: str, index: int = -1): 
@@ -55,9 +56,21 @@ class SymbolTable:
     def add_entry(self, entry: SymbolEntry):
         entry.ix = len(self.table)
         self.table.append(entry)
+        if entry.symbol[0] == '_':
+            self.temp_layer[-1].append(entry)
     
     def add(self, *args, **kwargs):
         return self.add_entry(SymbolEntry(*args, **kwargs))
+
+    def add_temp_layer(self):
+        self.temp_layer.append([])
+        return len(self.temp_layer)
+
+    def clear_temp_layer(self, key: int):
+        while key <= len(self.temp_layer):
+            for ent in self.temp_layer[-1]:
+                self.table.remove(ent)
+            self.temp_layer.pop()
 
 
 class HashCache:
@@ -506,6 +519,7 @@ class Interpreter:
         except OSError as e:
             self.add_message(Message.error(f'Unable to open "{path}": ' + e.strerror))
             return False
+        myTempLayerKey = self.symbol_table.add_temp_layer()
         ok = True
         with file:
             lines = file.readlines()
@@ -518,6 +532,7 @@ class Interpreter:
                 if not cmdok:
                     ok = False
                 cmd = ''
+        self.symbol_table.clear_temp_layer(myTempLayerKey)
         self.add_message(Message.info(
             f'File "{path}" loaded'
         ))
