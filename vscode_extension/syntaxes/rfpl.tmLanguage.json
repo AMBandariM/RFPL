@@ -1,0 +1,20 @@
+{
+    "name": "rfpl",
+    "patterns": [
+        {
+        "name": "comment.line.semicolon.rfpl",
+        "match": ";.*$"
+        },
+        {
+        "name": "keyword.control.rfpl",
+        "match": "\\b(load|Cn|Pr|Mn|S)\\b"
+        },
+        {
+        "name": "constant.numeric.rfpl",
+        "match": "\\b\\d+\\b|[!#@]"
+        }
+    ],
+    "repository": {},
+    "fileTypes": ["rfpl"],
+    "scopeName": "text.rfpl"
+}
