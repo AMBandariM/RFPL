@@ -4,11 +4,12 @@ import time
 import random
 import json
 from typing import Union, List
-from rfpl.interpreter import Interpreter
+from rfpl.interpreter import Interpreter, DEBUG
 from rfpl.RFPLLexer import RFPLLexer
 from rfpl.RFPLParser import RFPLParser
 from rfpl.interpreter import Interpreter, Message, MessageType
 from rfpl.natural import Natural, NaturalList
+from rfpl.symbol import SymbolEntry, FunctionType
 
 from abc import ABC, abstractmethod
 import re
@@ -89,6 +90,7 @@ def multiline_input():
     return cmd
 
 def typewriter(text, highlights=[], end='\n'):
+    t = 0 if DEBUG else 1
     lines = text.split('\n')
     fst = True
     print(C_BLUE, end='', flush=True)
@@ -101,15 +103,15 @@ def typewriter(text, highlights=[], end='\n'):
             print(char, end='', flush=True)
 
             if char in '.!?':
-                time.sleep(random.uniform(0.2, 0.3))
+                time.sleep(random.uniform(0.2 * t, 0.3 * t))
             elif char in ',;:':
-                time.sleep(random.uniform(0.15, 0.2))
+                time.sleep(random.uniform(0.15 * t, 0.2 * t))
             elif char in ' ':
-                time.sleep(random.uniform(0.04, 0.1))
+                time.sleep(random.uniform(0.04 * t, 0.1 * t))
             else:
-                time.sleep(random.uniform(0.02, 0.08))
+                time.sleep(random.uniform(0.02 * t, 0.08 * t))
         print()
-        time.sleep(random.uniform(0.06, 0.12))
+        time.sleep(random.uniform(0.06 * t, 0.12 * t))
     print(C_RESET, end=end, flush=True)
 
 
@@ -236,7 +238,7 @@ challengeFunctions = {
         'narg': 2
     },
     'y/x': {
-        'func': lambda args : Natural(args[0].toInt() // args[1].toInt()),
+        'func': lambda args : Natural(args[0].to_int() // args[1].to_int()),
         'narg': 2
     },
     'x%y': {
@@ -244,18 +246,44 @@ challengeFunctions = {
         'narg': 2
     },
     '|x-y|': {
-        'func': lambda args : Natural(max(args[0].toInt() - args[1].toInt(), args[1].toInt() - args[0].toInt())),
+        'func': lambda args : Natural(max(args[0].to_int() - args[1].to_int(), args[1].to_int() - args[0].to_int())),
         'narg': 2
     },
     'GCD': {
-        'func': lambda args : Natural(__gcd(args[0].toInt(), args[1].toInt())),
+        'func': lambda args : Natural(__gcd(args[0].to_int(), args[1].to_int())),
         'narg': 2
     },
     'fib': {
-        'func': lambda args : Natural(__fib(args[0].toInt())),
+        'func': lambda args : Natural(__fib(args[0].to_int())),
         'narg': 2
     },
     
+}
+assumedFunctions = {
+    'Add': SymbolEntry(
+        symbol='Add',
+        call=lambda _blist, args : args[0] + args[1],
+        builtin=True,
+        ftype=FunctionType(narg=2),
+    ),
+    'Sub': SymbolEntry(
+        symbol='Sub',
+        call=lambda _blist, args : args[1] - args[0],
+        builtin=True,
+        ftype=FunctionType(narg=2),
+    ),
+    'Mul': SymbolEntry(
+        symbol='Mul',
+        call=lambda _blist, args : args[0] * args[1],
+        builtin=True,
+        ftype=FunctionType(narg=2),
+    ),
+    'Mod': SymbolEntry(
+        symbol='Mod',
+        call=lambda _blist, args : args[0] % args[1],
+        builtin=True,
+        ftype=FunctionType(narg=2),
+    ),
 }
 class Challenge(Act):
     def __init__(self, journey, starter: str, prerequisites: List[Act], target: str,
@@ -306,7 +334,7 @@ class Challenge(Act):
             args = NaturalList(args)
             expected = challengeFunctions[self.target]['func'](args)
             actual = syment.call([], args)
-            if expected.toInt() != actual.to_int():
+            if expected.to_int() != actual.to_int():
                 typewriter(f'Oh, it\'s not working with input ({', '.join([str(n) for n in test])})')
                 return False
         typewriter(f'Congraduations!' if self.target else 'Good.')
@@ -316,7 +344,8 @@ class Challenge(Act):
         typewriter(self.banner)
         global intr
         intr = Interpreter()
-        intr.load_names(self.have)
+        for name in self.have:
+            intr.symbol_table.add_entry(assumedFunctions[name])
         hist = ''
         while True:
             line = multiline_input()
