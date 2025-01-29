@@ -113,16 +113,16 @@ class HashCache:
         res = fun.call(blist, args)
         if self.possibleMatches[fun.ix]:
             reshsh = res.weird_hash()
-            resnat = res.to_int()
+            resnat = int(res)
             for ent in self.possibleMatches[fun.ix]:
                 rel = ent.call(blist, args)
-                if rel.weirdHash() != reshsh and rel.toInt() != resnat:
+                if rel.weirdHash() != reshsh and int(rel) != resnat:
                     self.possibleMatches[fun.ix].remove(ent)
             mocknatlst = self.make_mock_natural_list(self.counter[fun.ix])
             rez = fun.call(None, mocknatlst)
             for ent in self.possibleMatches[fun.ix]:
                 rel = ent.call(None, mocknatlst)
-                if rel.weirdHash() != rez.weird_hash() and rel.toInt() != rez.to_int():
+                if rel.weirdHash() != rez.weird_hash() and int(rel) != int(rez):
                     self.possibleMatches[fun.ix].remove(ent)
             if len(self.possibleMatches[fun.ix]):
                 self.counter[fun.ix] += 1
@@ -255,7 +255,7 @@ class Interpreter:
         elif isinstance(tree, RFPLParser.BuiltinPrContext):
             f = tree.fexpr(0)
             g = tree.fexpr(1)
-            n = args[0].to_int()
+            n = int(args[0])
             args = args.drop(1)
             cur = self.interpret_fexpr(f, blist, args)
             args = NaturalList([Natural(None), Natural(None)]) + args

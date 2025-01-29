@@ -80,7 +80,7 @@ class Basics(RFPYModule):
         args = args.drop(1)
         if n.is_zero():
             return self.call_base(blist, 0, args)
-        n = Natural(n.to_int() - 1)
+        n = Natural(int(n) - 1)
         args = NaturalList([
             Natural(lambda args=args : self.Foldr(blist, NaturalList([n]) + args)),
             n

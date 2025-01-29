@@ -48,18 +48,18 @@ class Natural:
             return self.__natural == 1
         return self.is_defined() and all(x.is_zero() for x in self.__natural)
     
-    def to_int(self):
+    def __int__(self):
         if not self.is_defined():
             return -1
         if isinstance(self.__natural, int):
             return self.__natural
         num = 1
         for i, ent in enumerate(self.__natural):
-            num *= get_prime(i) ** ent.to_int()
+            num *= get_prime(i) ** int(ent)
         return num
     
     def simplify(self):
-        self.__natural = self.to_int()
+        self.__natural = int(self)
 
     def factor(self):
         if isinstance(self.__natural, list):
@@ -98,7 +98,7 @@ class Natural:
     def get_entry(self, ind: 'Natural'):
         if not self.is_defined() or not ind.is_defined():
             return Natural(None)
-        ind = ind.to_int()
+        ind = int(ind)
         self.factor()
         if ind >= len(self.__natural):
             return Natural(0)
@@ -109,7 +109,7 @@ class Natural:
             return Natural(None)
         self.factor()
         result = self.copy()
-        ind = ind.to_int()
+        ind = int(ind)
         while len(result.__natural) <= ind:
             result.__natural.append(Natural(0))
         result.__natural[ind] = nat
@@ -131,23 +131,23 @@ class Natural:
     def succ(self):
         if not self.is_defined():
             return Natural(None)
-        return Natural(self.to_int() + 1)
+        return Natural(int(self) + 1)
     
     def __add__(self, other: 'Natural'):
         if not self.is_defined() or not other.is_defined():
             return Natural(None)
-        return Natural(self.to_int() + other.to_int())
+        return Natural(int(self) + int(other))
 
     def __sub__(self, other: 'Natural'):
         if not self.is_defined() or not other.is_defined():
             return Natural(None)
-        return Natural(max(self.to_int() - other.to_int(), 0))
+        return Natural(max(int(self) - int(other), 0))
     
     def __mul__(self, other: 'Natural'):
         if not self.is_defined() or not other.is_defined():
             return Natural(None)
         if isinstance(self.__natural, int) or isinstance(other.__natural, int):
-            return Natural(self.to_int() * other.to_int())
+            return Natural(int(self) * int(other))
         a = self.__natural.copy()
         b = other.__natural.copy()
         if len(a) < len(b):
@@ -164,7 +164,7 @@ class Natural:
         if other.is_one():
             return Natural(self.__natural)
         if isinstance(self.__natural, int):
-            p = other.to_int()
+            p = int(other)
             return Natural(self.__natural ** p)
         return Natural(list(x * other for x in self.__natural))
 
@@ -173,7 +173,7 @@ class Natural:
             return Natural(None)
         if other.is_zero():
             return self
-        return Natural(self.to_int() % other.to_int())
+        return Natural(int(self) % int(other))
     
     def __eq__(self, other: 'Natural'):
         if not self.is_defined() or not other.is_defined():
@@ -183,7 +183,7 @@ class Natural:
             self.trim()
             other.trim()
             return self.__natural == other.__natural
-        return self.to_int() == other.to_int()
+        return int(self) == int(other)
     
     def __repr__(self):
         if not self.is_defined():

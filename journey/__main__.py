@@ -148,11 +148,14 @@ class SideNotes:
                 print(f'{i:2d} {note.title}')
             print(f'{len(self.notes):2d} end{C_RESET}\n')
             cmd = self.session.prompt('?? ').strip()
-            if cmd == 'end' or cmd == str(len(self.notes)):
+            if cmd == 'end':
                 print()
                 return
             try:
                 cmd = int(cmd)
+                if cmd >= len(self.notes) or cmd < 0:
+                    print()
+                    return
                 self.print_note(cmd)
             except ValueError:
                 pass
@@ -238,7 +241,7 @@ challengeFunctions = {
         'narg': 2
     },
     'y/x': {
-        'func': lambda args : Natural(args[0].to_int() // args[1].to_int()),
+        'func': lambda args : Natural(int(args[0]) // int(args[1])),
         'narg': 2
     },
     'x%y': {
@@ -246,15 +249,15 @@ challengeFunctions = {
         'narg': 2
     },
     '|x-y|': {
-        'func': lambda args : Natural(max(args[0].to_int() - args[1].to_int(), args[1].to_int() - args[0].to_int())),
+        'func': lambda args : Natural(max(int(args[0]) - int(args[1]), int(args[1]) - int(args[0]))),
         'narg': 2
     },
     'GCD': {
-        'func': lambda args : Natural(__gcd(args[0].to_int(), args[1].to_int())),
+        'func': lambda args : Natural(__gcd(int(args[0]), int(args[1]))),
         'narg': 2
     },
     'fib': {
-        'func': lambda args : Natural(__fib(args[0].to_int())),
+        'func': lambda args : Natural(__fib(int(args[0]))),
         'narg': 2
     },
     
@@ -334,7 +337,7 @@ class Challenge(Act):
             args = NaturalList(args)
             expected = challengeFunctions[self.target]['func'](args)
             actual = syment.call([], args)
-            if expected.to_int() != actual.to_int():
+            if int(expected) != int(actual):
                 typewriter(f'Oh, it\'s not working with input ({', '.join([str(n) for n in test])})')
                 return False
         typewriter(f'Congraduations!' if self.target else 'Good.')
