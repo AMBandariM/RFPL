@@ -1,9 +1,18 @@
-[character] :: greetings, congraduations
+-- introduction. #, !, s
+>> play-around
+-- =, Cn
+>> z+3
+-- Pr
+>> x+y
+>> y^x
+>> y-x
+>> |x-y|
+-- we have a lot, let's go for more
+>> x / y (a hard way)
+-- you have Log, let's go for Number Theory
+>> x%y
+>> GCD
+-- you can construct vp
+>> fib
 
-[intuition] :: RF=TM, numbers=list
-
-[userguide] :: how to use RFPL, syntax and ...
-
-[sidenotes] :: notes, for restudy
-
-[challenge] :: problem and hints
+-- introduce <,>

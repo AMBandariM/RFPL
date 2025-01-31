@@ -46,7 +46,7 @@
             },
             {
                 "type": "sidenote",
-                "title": "fundamental",
+                "title": "fundamentals",
                 "content": "`#n` is Constant n: `#2(1, 8) = 2, #7() = 7`\n`!n` is Identity, returning (n+1)-th input: `!0(1, 3) = 1, !2(3, 4, 5) = 5`\n`S` is Successor: `S(0) = 1, S(S(2)) = 4, S(1, 13) = 2, S(9, 2, 4) = 10`"
             }
         ]
@@ -106,7 +106,7 @@
             },
             {
                 "type": "sidenote",
-                "title": "fundamental",
+                "title": "fundamentals",
                 "content": "`Cn` is Composition: `a = Cn[f, g, h] -> a(x, y, z) = f(g(x, y, z), h(x, y, z))`"
             }
         ]
@@ -165,7 +165,7 @@
             },
             {
                 "type": "sidenote",
-                "title": "fundamental",
+                "title": "fundamentals",
                 "content": "`Pr` is Primitive Recursion:\n          h = Pr[f, g]:  h(0, y_1, ..., y_k) = f(y_1, ..., y_k),\n      h(x+1, y_1, ..., y_k) = g(h(x, y_1, ..., y_k), x, y_1, ..., y_k)"
             }
         ]
@@ -264,20 +264,20 @@
         "starter": "challenge06",
         "prerequisites": [9],
         "target": "x/y",
-        "banner": "TODO :: EDIT THIS SHIT !!! Task is pretty straight forward, implement integer division: `5 / 2 = 2, 101 / 7 = 14`\nYou can assume `y > 0` and return whatever you want in case of `y = 0`.\nThere is 3 hints and you can use `Add`, `Mul`, and `Sub` without defining them.\nKeys: `hint`, `list`, `done`, and `end`.",
+        "banner": "Task is pretty straight forward, implement integer division: `5 / 2 = 2, 101 / 7 = 14`\nYou can assume `y > 0` and return whatever you want in case of `y = 0`.\nThere is 3 hints and you can use `Add`, `Mul`, and `Sub` without defining them.\nKeys: `hint`, `list`, `done`, and `end`.",
         "tests": [
-            [2,5],
-            [7,101],
-            [2,0],
-            [3,70],
-            [7,15]
+            [5,2],
+            [101,7],
+            [0,2],
+            [70,3],
+            [15,7]
         ],
         "limits": ["load", "bracket", "builtinMn", "naturallist"],
         "have": ["Add", "Mul", "Sub"],
         "hints": [
             "This challenge is a little bit hard. Spend more time on it.",
             "`k = x / y` is the biggest integer such that `k * y <= x`\n Or, it is kinda number of such integers!",
-            "make a function `I(k, x, y) = 1 if k * y <= x else 0` and add this `I` for `k = 1, 2, ..., ?`"
+            "Make a function `I(k, x, y) = 1 if k * y <= x else 0` and add these `I`s for `k = 1, 2, ..., ?`"
         ]
     },
     {
@@ -286,8 +286,8 @@
         "jobs": [
             {
                 "type": "typewriter",
-                "content": "Great Job! Now you can construct `Log` function using similar trick.",
-                "highlights": ["`Log`"]
+                "content": "Great Job! Now you can construct `Log` function using similar trick.\nWe will find easier ways to build these functions when we construct functions `Mod` and `Divs`",
+                "highlights": ["`Log`", "`Mod`", "`Divs`"]
             },
             {
                 "type": "typewriter",
@@ -343,8 +343,8 @@
         "jobs": [
             {
                 "type": "typewriter",
-                "content": "That trick in `GCD` can be helpful in making other functions.\nYou can compute `v_p(x)` which is maximum `k` such that `p^k | x` (divises).",
-                "highlights": ["`v_p(x)`"]
+                "content": "That trick in `GCD` can be helpful in making other functions.\nYou can compute `vp(x)` which is maximum `k` such that `p^k | x` (divises).",
+                "highlights": ["trick", "`vp(x)`"]
             },
             {
                 "type": "typewriter",
@@ -371,7 +371,7 @@
         "hints": [
             "`fib` can't compute its result knowing just the previous member in sequence.\nBut you can compute `fib(n+2),fib(n+1)` knowing `fib(n+1),fib(n)`.\nHow can we return a `Touple` instead of an `Integer`?",
             "We have to pack our outputs and unpack inputs that we know are packed!",
-            "use `2^x * 3^y` for packing `x,y` and use `v_2` and `v_3` for unpacking!"
+            "use `2^x * 3^y` for packing `x,y` and use `v2` and `v3` for unpacking!"
         ]
     },
     {
@@ -380,12 +380,92 @@
         "jobs": [
             {
                 "type": "typewriter",
-                "content": "Thank you for following! We are developing this Journey...",
-                "highlights": ["Journey"]
+                "content": "You See? We were working just with numbers, but it seems toupls can be seen as numbers too!\nIn fact, any list can be seen as a number just like `<a1, ..., an> -> 2^a1...pn^an`.\nSo RFPL provides a syntax for us to show lists (which are numbers!).\nSo you can write `6` or you write it like `<1,1>` or `9 = <0, <1>>`.",
+                "highlights": ["touple", "as numbers", "list", "RFPL"]
             }
         ]
     },
+    {
+        "type": "userguide",
+        "prerequisites": [16],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "What a great language, isn't it?\nIt seems you can construct everything with these beautiful functions!\nBut wait. All these functions will return a result after finite steps.\nWhat? we found something better than The Turing Machine?",
+                "highlights": ["finite", "The Turing Machine"]
+            },
+            {
+                "type": "typewriter",
+                "content": "Ummmm, No. You actually can NOT construct all functions with these fundamental functions you know.\nFor example consider Ackermann function, you can't construct it.\nWhat is the problem? The problem is that we haven't a `loop for ever`.",
+                "highlights": ["NOT", "Ackermann", "`loop for ever`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "So RFPL just provides another fundamental function `Mn` (Mn stands for Minimization)\nIf `f(x, y_1, ..., y_k)` be a function and `g = Mn[f]`,\nthen `g(y_1, ..., y_n)` will be the smallest `x` such that `f(x, y_1, ..., y_n) = 0`\nAnd if there is no such `x`? Yes, loop for ever.",
+                "highlights": ["RFPL", "`Mn`", "Minimization", "smallest", "loop for ever"]
+            }
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "play-around",
+        "prerequisites": [17],
+        "target": "",
+        "banner": "Try things you've learned,\nFor example test `Add(<1, 2>, <<1>, 0, 1>)` and check why the result it correct.\nOr, define `log = Mn[Sub[!1, Pow(!0, #2)]]` and test it.\nWrite down `done` when you are.",
+        "tests": [],
+        "limits": ["load", "bracket"],
+        "have": ["Add", "Sub", "Pow"],
+        "hints": []
+    },
+    {
+        "type": "userguide",
+        "prerequisites": [18],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "Huh, it was pretty much everything, but let me show you one more thing before we finish.\n`Cn`, `Pr`, and `Mn` were functions! But the had brackets in front of them! Why? Just because they were here first?",
+                "highlights": ["`Cn`", "`Pr`", "`Mn`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "No! It's not like that in here! RFPL is a fair and generous language!\nThese functions used brackets because they get functions as inputs.\nYou can write your functions which get functions as input!\nYou can use `@n` to refer the n-th function in your input functions, just like `!n` for n-th input!",
+                "highlights": ["RFPL", "fair", "generous", "get functions", "`@n`"]
+            },
+            {
+                "type": "typewriter",
+                "content": "For example consider `swap = Cn[@0, !1, !0]`, if `f` be a two-input function, `swap[f]` will be `f` with swapped inputs!",
+                "highlights": ["@0"]
+            },
+            {
+                "type": "typewriter",
+                "content": "There is another useful tool for defining such functions, it is `!n..`, it means 'Consider all inputs !n, !n+1, ...'\nFor example `swap = Cn[@0, !1, !0, !2..]` works like previous `swap` and it provides other inputs (if any).\nNow the `f` in `swap[f]` doesn't have to get exactly 2 inputs, it can get more.",
+                "highlights": ["!n..", "other"]
+            }
+        ]
+    },
+    {
+        "type": "challenge",
+        "starter": "play-around",
+        "prerequisites": [19],
+        "target": "",
+        "banner": "Define `for = Pr[@0, Cn[@1, !0, !2..]]` and construct `add = for[!0, S]`, `mul = for[#0, add]`, `pow = for[#1, mul]`.\nTest these functions. Play around and write down `done` when you are.",
+        "tests": [],
+        "limits": ["load"],
+        "have": [],
+        "hints": []
+    },
 
+    {
+        "type": "userguide",
+        "prerequisites": [20],
+        "jobs": [
+            {
+                "type": "typewriter",
+                "content": "Thank you for following this Journey to here!\nYou can use our RFPL python library to run a commandline and run your own RFPL programs.\nEnjoy!",
+                "highlights": ["Journey", "RFPL", "Enjoy"]
+            }
+        ]
+    },
     {
         "type": "writer-contact",
         "fullname": "AmirMohammad Bandari Masoole",
