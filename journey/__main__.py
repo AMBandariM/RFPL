@@ -240,7 +240,7 @@ challengeFunctions = {
         'func': lambda args : args[1] - args[0],
         'narg': 2
     },
-    'y/x': {
+    'x/y': {
         'func': lambda args : Natural(int(args[0]) // int(args[1])),
         'narg': 2
     },
@@ -281,12 +281,19 @@ assumedFunctions = {
         builtin=True,
         ftype=FunctionType(narg=2),
     ),
+    'Pow': SymbolEntry(
+        symbol='Pow',
+        call=lambda _blist, args : args[1] ** args[0],
+        builtin=True,
+        ftype=FunctionType(narg=2),
+    ),
     'Mod': SymbolEntry(
         symbol='Mod',
         call=lambda _blist, args : args[0] % args[1],
         builtin=True,
         ftype=FunctionType(narg=2),
     ),
+
 }
 class Challenge(Act):
     def __init__(self, journey, starter: str, prerequisites: List[Act], target: str,
