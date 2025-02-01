@@ -208,6 +208,7 @@ class Interpreter:
             builtin=True,
             ftype=FunctionType(narg=1),
         )
+        self.hash_loaded = set()
         
         self.cache = HashCache([])  # add the funcions here
 
@@ -562,20 +563,35 @@ class Interpreter:
         self.add_message(Message.info(f'Added RFPY functions: ' + ', '.join(names)))
         return not self.has_error
 
+    def file_hash(self, filename: Path):
+        hasher = hashlib.new('sha256')
+        with open(filename, 'rb') as file:
+            while True:
+                chunk = file.read(8192)
+                if not chunk:
+                    break
+                hasher.update(chunk)
+        return hasher.hexdigest()
+
     def load_module(self, module: str) -> bool:
         for start in ('.', LIB_PATH):
             path = Path(start)
             for part in module.split('.'):
                 path = path / part
-            if (modpath := path.with_suffix('.rfpy')).is_file():
-                return self.load_rfpy_module(modpath)
-            if (modpath := path.with_suffix('.py')).is_file():
-                return self.load_rfpy_module(modpath)
-            if (modpath := path.with_suffix('.rfpl')).is_file():
-                return self.load_rfpl_module(modpath)
-            if path.is_file():
-                # defaults to rfpl to avoid mistakenly importing non python file
-                return self.load_rfpl_module(path)
+            if (modpath := path.with_suffix('.rfpy')).is_file() or (modpath := path.with_suffix('.py')).is_file():
+                hsh = self.file_hash(modpath)
+                if hsh in self.hash_loaded:
+                    return True
+                if ret := self.load_rfpy_module(modpath):
+                    self.hash_loaded.add(hsh)
+                return ret
+            if (modpath := path.with_suffix('.rfpl')).is_file() or (modpath := path).is_file():
+                hsh = self.file_hash(modpath)
+                if hsh in self.hash_loaded:
+                    return True
+                if ret := self.load_rfpl_module(modpath):
+                    self.hash_loaded.add(hsh)
+                return ret
         self.add_message(Message.error(f'Unable to find "{module}"'))
         return False
 
