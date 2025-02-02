@@ -4,6 +4,7 @@ import time
 import random
 import json
 from typing import Union, List
+from pathlib import Path
 from rfpl.interpreter import Interpreter, DEBUG
 from rfpl.RFPLLexer import RFPLLexer
 from rfpl.RFPLParser import RFPLParser
@@ -215,7 +216,7 @@ def __gcd(a: int, b: int)->int:
     return __gcd(min(a, b), max(a, b) % min(a, b))
 
 def __fib(n: int)->int:
-    if a < 2:
+    if n < 2:
         return 1
     return __fib(n-1) + __fib(n-2)
 
@@ -408,7 +409,7 @@ class Challenge(Act):
 
 
 class Journey:
-    def __init__(self, jsonfilepath: str):
+    def __init__(self, jsonfilepath: Path):
         self.username: str = ''
         self.sidenotes: SideNotes = SideNotes()
         self.acts: List[Act] = []
@@ -470,6 +471,11 @@ class Journey:
             if cmd in runnables_starters:
                 runnables[cmd].run()
 
-jrny = Journey('./journey/journey_en.json')
-jrny.run()
 
+def main():
+    jrny = Journey(Path(__file__).parent / 'journey_en.json')
+    jrny.run()
+
+
+if __name__ == '__main__':
+    main()

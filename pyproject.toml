@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rfpl"
+authors = [
+    {name = "AmirMohammad Bandari Masoole"},
+    {name = "Parsa Alizadeh"}
+]
+description = "Recursive Functional Programming Language"
+readme = "README.md"
+dependencies = [
+    "prompt_toolkit",
+    "antlr4-python3-runtime"
+]
+dynamic = ["version"]
+requires-python = ">= 3.9" # My current guess based on (:=). It is better to lower it to python 3.8
+# license, keywords, homepage, ...
+
+[project.scripts]
+rfpl = "rfpl.__main__:main"
+journey = "journey.__main__:main"
+
+[tool.setuptools.packages]
+find = {}
+
+[tool.setuptools_scm]
+version_scheme = "no-guess-dev"

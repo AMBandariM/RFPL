@@ -86,7 +86,8 @@ def save(filename:str):
             f.write(hist)
             print(f'   {C_GREEN}saved on {filename}{C_RESET}\n')
 
-if __name__ == '__main__':
+def main():
+    global intr
     intr = Interpreter()
     while True:
         try:
@@ -125,3 +126,7 @@ if __name__ == '__main__':
             elif msg.typ == MessageType.EXCEPTION:
                 print(ANSI(f' {C_RED}* EXCEPTION: {msg.message}{C_RESET}'))
         print()
+
+
+if __name__ == '__main__':
+    main()
