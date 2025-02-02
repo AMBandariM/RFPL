@@ -19,7 +19,7 @@ from .symbol import BaseList, FunctionType, SymbolEntry
 from .rfpy import RFPYModule
 
 DEBUG = True
-LIB_PATH = './lib'
+LIB_PATH = Path(__file__).parent / 'lib'
 
 
 def debug(*args):
@@ -574,8 +574,7 @@ class Interpreter:
         return hasher.hexdigest()
 
     def load_module(self, module: str) -> bool:
-        for start in ('.', LIB_PATH):
-            path = Path(start)
+        for path in (Path('.'), LIB_PATH):
             for part in module.split('.'):
                 path = path / part
             if (modpath := path.with_suffix('.rfpy')).is_file() or (modpath := path.with_suffix('.py')).is_file():

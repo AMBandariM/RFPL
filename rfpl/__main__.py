@@ -87,7 +87,7 @@ def save(filename:str):
             print(f'   {C_GREEN}saved on {filename}{C_RESET}\n')
 
 def main():
-    global intr
+    global intr, hist
     intr = Interpreter()
     while True:
         try:
