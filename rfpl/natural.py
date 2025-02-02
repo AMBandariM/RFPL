@@ -150,11 +150,11 @@ class Natural:
             return Natural(int(self) * int(other))
         a = self.__natural.copy()
         b = other.__natural.copy()
-        if len(a) < len(b):
-            a += [Natural(0)] * (len(b) - len(a))
-        elif len(b) < len(a):
-            b += [Natural(0)] * (len(a) - len(b))
-        return Natural(list(x + y for x, y in zip(a, b)))
+        if len(b) < len(a):
+            a, b = b, a
+        for i in range(len(a)):
+            b[i] = b[i] + a[i]
+        return Natural(b)
 
     def __pow__(self, other: 'Natural'):
         if not self.is_defined() or not other.is_defined():

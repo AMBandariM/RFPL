@@ -1,4 +1,12 @@
-load logic
+;; example
+; load parsa-fib
+; fibs = imap[get0, fib]
+; scanl[fibs](10)
+;; or in reverse
+; scanr[fibs](10)
+; foldl[fibs, #0, Add](10) ; equal fibs(0) + fibs(1) + ... fibs(9)
+; scanl[scanr[fibs]](10)
+
 load stack
 
 ; head[list]
@@ -12,7 +20,7 @@ cons = if[Cn[IsZero, !0], Cn[@0, !1..], Cn[@1, Cn[Sub, #1, !0], !1..]]
 
 ; foldl[list, init, binop] -> list
 foldl = Pr[@1, Cn[@2, !0, ~Cn[@0, !1, !2..]]]
-foldlz = Foldr[@1, Cn[@2, !0, ~Cn[@0, !1, !2..]]]
+foldlz = Prz[@1, Cn[@2, !0, ~Cn[@0, !1, !2..]]]
 
 ; foldr[list, init, binop] -> list
 reverse = Cn[@0, Cn[Sub, !0, !1], !2..]
@@ -37,11 +45,10 @@ forall = foldrz[@0, #1, and]
 ; exists[R](u, xs...) = exists v < u. R(v, xs...)
 exists = foldrz[@0, #0, or]
 
-; example
-; load parsa-fib
-; fibs = imap[get0, fib]
-; scanl[fibs](10)
-; or in reverse
-; scanr[fibs](10)
-; foldl[fibs, #0, Add](10) ; equal fibs(0) + fibs(1) + ... fibs(9)
-; scanl[scanr[fibs]](10)
+; zip[list, list] -> list
+makepair = Cn[Set, #0, !0, Cn[Set, #1, !1, #<>]]
+zip = combine[makepair, @0, @1]
+
+; factor(nprime, x)
+pi = Cn[Int, Cn[Set, !0, #1, #<>]]
+factor = Cn[filter[Cn[sgn, Cn[Get, #1, !0]]], scanl[zip[pi, Get]]]

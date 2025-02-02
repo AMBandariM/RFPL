@@ -23,26 +23,34 @@ class Basics(RFPYModule):
 
     @define(narg=2)
     def Get(self, args):
+        if not args[1].is_defined():
+            return Natural(None)
         if args[1].is_zero():
             return Natural(0)
         return args[1].get_entry(args[0])
 
     @define(narg=3)
     def Set(self, args):
+        if not args[2].is_defined():
+            return Natural(None)
         if args[2].is_zero():
             return Natural(0)
         return args[2].set_entry(args[0], args[1])
 
     @define(narg=1)
     def Int(self, args):
+        if not args[0].is_defined():
+            return Natural(None)
         result = args[0].copy()
         result.simplify()
         return result
 
     @define(narg=1)
     def List(self, args):
+        if not args[0].is_defined():
+            return Natural(None)
         result = args[0].copy()
-        if result.is_defined() and not result.is_zero():
+        if not result.is_zero():
             result.factor()
         return result
 
@@ -52,29 +60,35 @@ class Basics(RFPYModule):
     
     @define(narg=1)
     def IsZero(self, args):
+        if not args[0].is_defined():
+            return Natural(None)
         if args[0].is_zero():
             return Natural(1)
         return Natural(0)
     
     @define(narg=1)
     def IsOne(self, args):
+        if not args[0].is_defined():
+            return Natural(None)
         if args[0].is_one():
             return Natural(1)
         return Natural(0)
     
     @define(narg=2)
     def Equal(self, args):
+        if not args[0].is_defined() or not args[1].is_defined():
+            return Natural(None)
         if args[0] == args[1]:
             return Natural(1)
         return Natural(0)
 
     @define(narg=1, nbase=2)
-    def Foldr(self, blist, args):
+    def Prz(self, blist, args):
         # EXPERIMENTAL
         # to be discussed later: basically every function can be modeled as an infinite list:
         # f(0, xs..), f(1, xs..), f(2, xs..), ... a list for every xs
         # Pr is the strict left fold function, starting from f(0, ..).
-        # This function (Foldr) is the lazy right fold equivalent of Pr.
+        # This function (Prz) is the lazy right fold equivalent of Pr.
         # If we allowed recursive definitions, this function could be written in rfpl.
         n = args[0]
         args = args.drop(1)
@@ -82,7 +96,7 @@ class Basics(RFPYModule):
             return self.call_base(blist, 0, args)
         n = Natural(int(n) - 1)
         args = NaturalList([
-            Natural(lambda args=args : self.Foldr(blist, NaturalList([n]) + args)),
+            Natural(lambda args=args : self.Prz(blist, NaturalList([n]) + args)),
             n
         ]) + args
         return self.call_base(blist, 1, args)        

@@ -1,46 +1,37 @@
-load basics
+load logic
 
 empty = #<>
 
-xs = !0
-len = Cn[Get, #0, xs]
+; len(xs)
+len = Cn[Get, #0, !0]
 
-n = !0
-xs = !1
-setlen = Cn[Set, #0, n, xs]
+; setlen(n, xs)
+setlen = Cn[Set, #0, !0, !1]
 
-i = !0
-xs = !1
-ent = Cn[Get, Cn[S, i], xs]
+; ent(i, xs)
+ent = Cn[Get, Cn[S, !0], !1]
 
-i = !0
-x = !1
-xs = !2
-setent = Cn[Set, Cn[S, i], x, xs]
+; setent(i, x, xs)
+setent = Cn[Set, Cn[S, !0], !1, !2]
 
-xs = !0
-x = !1
-append = Cn[setent, len, x, Cn[setlen, Cn[S, len], xs]]
+; append(xs, x)
+append = Cn[setent, len, !1, Cn[Mul, !0, #<1>]]
 
-i = !0
-xs = !1
-mapent = Cn[setent, i, Cn[@0, Cn[ent, i, xs]], xs]
+; mapent[f](i, xs)
+mapent = Cn[setent, !0, Cn[@0, Cn[ent, !0, !1]], !1]
 
-xs = !0
-map = Cn[Pr[!0, Cn[mapent[@0], !1, !0]], len, xs]
+; map[f](xs)
+map = Cn[Pr[!0, Cn[mapent[@0], !1, !0]], len, !0]
 
-xs = !0
-ys = !1
-concat = Cn[Pr[!0, Cn[append, !0, Cn[ent, !1, !3]]], Cn[len, ys], xs, ys]
+; concat(xs, ys)
+concat = Cn[Pr[!0, Cn[append, !0, Cn[ent, !1, !3]]], Cn[len, !1], !0, !1]
 
-if2 = Cn[Pr[@2, Cn[@1, !2, !3]], @0, !0, !1]
-
-xs = !0
+; filter[pred](xs)
 filter =
     Cn[
         Pr[empty,
             Cn[
-                if2[Cn[@0, !0],
+                if[Cn[@0, !0],
                     Cn[append, !1, !0],
                     !1
                 ],
