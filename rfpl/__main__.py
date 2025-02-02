@@ -97,7 +97,7 @@ if __name__ == '__main__':
             continue
         if re.match(r'^\s*(exit|finish|end)\s*$', line):
             break
-        if re.match(r'list', line):
+        if re.match(r'^\s*list\s*$', line):
             out = []
             outstr = ''
             for fun in intr.symbol_table.table[::-1]:
