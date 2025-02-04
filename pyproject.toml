@@ -22,8 +22,8 @@ requires-python = ">= 3.9" # My current guess based on (:=). It is better to low
 rfpl = "rfpl.__main__:main"
 journey = "journey.__main__:main"
 
-[tool.setuptools.packages]
-find = {}
+[tool.setuptools.packages.find]
+namespaces = false
 
 [tool.setuptools_scm]
 version_scheme = "no-guess-dev"
