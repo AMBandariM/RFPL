@@ -175,16 +175,6 @@ class Natural:
             return self
         return Natural(int(self) % int(other))
     
-    def __eq__(self, other: 'Natural'):
-        if not self.is_defined() or not other.is_defined():
-            # two undefineds are not equal
-            return False
-        if isinstance(self.__natural, list) and isinstance(other.__natural, list):
-            self.trim()
-            other.trim()
-            return self.__natural == other.__natural
-        return int(self) == int(other)
-    
     def __repr__(self):
         if not self.is_defined():
             return 'Undefined'
@@ -204,10 +194,46 @@ class Natural:
         for ent in self.__natural:
             subreps.append(ent.__str__())
         return '<{}>'.format(', '.join(subreps))
-
-    def weird_hash(self):
-        # TODO: needs to be changed
-        return hashlib.md5(str(self).encode()).hexdigest()
+    
+    def hard_equal(self, other: 'Natural'):
+        # Equality in the rfpl sense. Two undefineds are not equal.
+        # It may convert numbers to check for equality
+        if not self.is_defined() or not other.is_defined():
+            # two undefineds are not equal
+            return False
+        if isinstance(self.__natural, list) and isinstance(other.__natural, list):
+            self.trim()
+            other.trim()
+            return self.__natural == other.__natural
+        return int(self) == int(other)
+    
+    def __eq__(self, other: 'Natural'):
+        # Soft equality in the python sense. Used for caching.
+        if not self.is_defined():
+            return not other.is_defined()
+        if isinstance(self.__natural, list):
+            return isinstance(other.__natural, list) and self.__natural == other.__natural
+        return isinstance(other.__natural, int) and self.__natural == other.__natural
+        
+    def __hash__(self):
+        if not self.is_defined():
+            return 0
+        if isinstance(self.__natural, int):
+            return hash(self.__natural)
+        return hash(tuple(self.__natural))
+    
+    def size(self):
+        if callable(self.__natural):
+            return None
+        if isinstance(self.__natural, list):
+            total = 0
+            for nat in self.__natural:
+                sz = nat.size()
+                if sz is None:
+                    return None
+                total += sz
+            return total
+        return 1
 
 
 class NaturalList:
@@ -237,3 +263,9 @@ class NaturalList:
         if len(self.content) < nitem:
             return NaturalList([])
         return NaturalList(self.content.copy()[nitem:])
+    
+    def __eq__(self, other: 'NaturalList'):
+        return self.content == other.content
+    
+    def __hash__(self):
+        return hash(tuple(self.content))    

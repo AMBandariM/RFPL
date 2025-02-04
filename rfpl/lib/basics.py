@@ -78,7 +78,7 @@ class Basics(RFPYModule):
     def Equal(self, args):
         if not args[0].is_defined() or not args[1].is_defined():
             return Natural(None)
-        if args[0] == args[1]:
+        if args[0].hard_equal(args[1]):
             return Natural(1)
         return Natural(0)
 

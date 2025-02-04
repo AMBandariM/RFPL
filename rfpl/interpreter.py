@@ -11,6 +11,8 @@ import random
 from enum import Enum
 from pathlib import Path
 import inspect
+import cachetools
+import functools
 
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
@@ -73,63 +75,68 @@ class SymbolTable:
             self.temp_layer.pop()
 
 
-class HashCache:
-    CACHE = False
+@dataclass
+class CallInfo:
+    fexpr: RFPLParser.FexprContext
+    blist: BaseList
+    args: NaturalList
 
-    def __init__(self, basic_functions):
-        self.basic_functions = basic_functions
-        self.cache = {}
-        self.possibleMatches = {}
-        self.counter = {}
-        self.counter_max = 20
+    @functools.cached_property
+    def text(self):
+        return self.fexpr.getText()
+    
+    @functools.cached_property
+    def hash(self):
+        return hash((self.text, self.blist, self.args))
+    
+    def __eq__(self, other: 'CallInfo'):
+        return self.text == other.text and self.blist == other.blist and self.args == other.args
+    
+    def __hash__(self):
+        return self.hash
+    
+    def __repr__(self):
+        return f'CallInfo({hash(self)}, {self.text}, {self.args.content})'
 
-    def hash(self, args: NaturalList):
-        lst = ''
-        started = False
-        for arg in args.content[::-1]:
-            if not arg.is_zero():
-                started = True
-            if started:
-                lst += arg.weird_hash() + '+'
-        return hashlib.md5(lst.encode()).hexdigest()
 
-    def make_mock_natural_list(self, n: int):
-        m = int(n**0.5)
-        a, b, c = random.randint(0,m), random.randint(0,m), random.randint(0,m)
-        return NaturalList([Natural(a), Natural(b), Natural(c), Natural(None), Natural(None)])
+class Cache:
+    ENABLE = True
 
-    def call_and_cache(self, fun: SymbolEntry, blist: BaseList, args: List[Natural]):
-        if (blist is not None and len(blist.args)) or fun.builtin or not self.CACHE:
-            return fun.call(blist, args)
-        if fun.ix not in self.possibleMatches:
-            self.possibleMatches[fun.ix] = self.basic_functions.copy()
-            self.counter[fun.ix] = 0
-            self.cache[fun.ix] = {}
-        if self.counter[fun.ix] == self.counter_max:
-            return self.possibleMatches[fun.ix][0].call(blist, args)
-        hsh = self.hash(args)
-        if hsh in self.cache[fun.ix]:
-            return self.cache[fun.ix][hsh]
-        res = fun.call(blist, args)
-        if self.possibleMatches[fun.ix]:
-            reshsh = res.weird_hash()
-            resnat = int(res)
-            for ent in self.possibleMatches[fun.ix]:
-                rel = ent.call(blist, args)
-                if rel.weirdHash() != reshsh and int(rel) != resnat:
-                    self.possibleMatches[fun.ix].remove(ent)
-            mocknatlst = self.make_mock_natural_list(self.counter[fun.ix])
-            rez = fun.call(None, mocknatlst)
-            for ent in self.possibleMatches[fun.ix]:
-                rel = ent.call(None, mocknatlst)
-                if rel.weirdHash() != rez.weird_hash() and int(rel) != int(rez):
-                    self.possibleMatches[fun.ix].remove(ent)
-            if len(self.possibleMatches[fun.ix]):
-                self.counter[fun.ix] += 1
-                if self.counter[fun.ix] == self.counter_max:
-                    debug(f'replacing {fun.symbol} with {self.possibleMatches[fun.ix][0].symbol} ...')
-        self.cache[fun.ix][hsh] = res
-        return res
+    def __init__(self):
+        self._cache = {} # cachetools.LRUCache(maxsize=100000)
+
+    def predicate(self, info: CallInfo):
+        # Is it suitable for caching?
+        if info.blist is not None and info.blist.prev is not None:
+            return False
+        if info.fexpr.c_ftype.instant:
+            return False
+        for nat in info.args.content:
+            sz = nat.size()
+            if sz is None or sz >= 64:
+                return False
+        return True
+
+    def search(self, root, blist, args):
+        if not Cache.ENABLE:
+            return None
+        info = CallInfo(root, blist, args)
+        if not self.predicate(info):
+            return None
+        if info not in self._cache:
+            debug('cache miss', info)
+            return None
+        debug('cache hit', info)
+        return self._cache[info]
+
+    def write(self, root, blist, args, result):
+        if not Cache.ENABLE:
+            return
+        info = CallInfo(root, blist, args)
+        if not self.predicate(info):
+            return
+        info.args = info.args.copy()
+        self._cache[info] = result
 
 
 class MessageType(Enum):
@@ -209,11 +216,11 @@ class Interpreter:
             ftype=FunctionType(narg=1),
         )
         self.hash_loaded = set()
-        
-        self.cache = HashCache([])  # add the funcions here
 
         self.messages: List[Message] = []
         self.has_error = False
+
+        self.cache = Cache()
 
     def add_message(self, msg: Message):
         self.messages.append(msg)
@@ -221,6 +228,14 @@ class Interpreter:
             self.has_error = True
 
     def interpret_fexpr(self, root, blist: BaseList, args: NaturalList, strict: bool = False) -> Natural:
+        result = self.cache.search(root, blist, args)
+        if result is not None:
+            return result
+        result = self._interpret_fexpr(root, blist, args, strict)
+        self.cache.write(root, blist, args, result)
+        return result
+
+    def _interpret_fexpr(self, root, blist: BaseList, args: NaturalList, strict: bool = False) -> Natural:
         tree = root.getChild(0)
         if not strict and tree.getToken(RFPLParser.Lazy, 0) is not None:
             return Natural(lambda args=args.copy() : self.interpret_fexpr(root, blist, args, strict=True))
@@ -233,8 +248,8 @@ class Interpreter:
                     if bexpr.c_ftype.nbase > 0:
                         bnxt.prev = blist
                         break
-            syment = tree.c_syment
-            return self.cache.call_and_cache(syment, bnxt, args)
+            syment: SymbolEntry = tree.c_syment
+            return syment.call(bnxt, args)
         elif isinstance(tree, RFPLParser.BracketContext):
             return self.interpret_fexpr(blist.args[tree.c_number], blist.prev, args)
         elif isinstance(tree, RFPLParser.IdentityContext):
@@ -275,8 +290,7 @@ class Interpreter:
             if not result.is_defined():
                 return Natural(None)
             return args[0]
-        else:
-            raise Exception(f'Unknown tree type {type(tree)}')
+        raise Exception(f'Unknown tree type {type(tree)}')
 
     def interpret_nexpr(self, tree):
         if not isinstance(tree, RFPLParser.NexprContext):
@@ -409,6 +423,7 @@ class Interpreter:
             htype = self.preprocess(h)
             ftype.narg = htype.narg + 1
             ftype.nbase = htype.nbase
+            ftype.instant = False
             for fj in htype.relative_narg_b:
                 dict_max_eq(ftype.relative_narg_b, fj, htype.relative_narg_b[fj] + 1)
             for fj in htype.max_narg_b:
@@ -428,6 +443,7 @@ class Interpreter:
             htype = self.preprocess(h)
             ftype.narg = max(ftype.narg, htype.narg - 1)
             ftype.nbase = htype.nbase
+            ftype.instant = False
             for fj in htype.relative_narg_b:
                 dict_max_eq(ftype.relative_narg_b, fj, htype.relative_narg_b[fj] - 1)
             for fj in htype.max_narg_b:
