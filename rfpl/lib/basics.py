@@ -59,6 +59,14 @@ class Basics(RFPYModule):
         return args[0] % args[1]
     
     @define(narg=1)
+    def Pred(self, args):
+        if not args[0].is_defined():
+            return Natural(None)
+        if args[0].is_zero():
+            return Natural(0)
+        return Natural(int(args[0]) - 1)
+    
+    @define(narg=1)
     def IsZero(self, args):
         if not args[0].is_defined():
             return Natural(None)
@@ -73,6 +81,14 @@ class Basics(RFPYModule):
         if args[0].is_one():
             return Natural(1)
         return Natural(0)
+    
+    @define(narg=1)
+    def Sgn(self, args):
+        if not args[0].is_defined():
+            return Natural(None)
+        if args[0].is_zero():
+            return Natural(0)
+        return Natural(1)
     
     @define(narg=2)
     def Equal(self, args):

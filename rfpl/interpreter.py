@@ -13,6 +13,7 @@ from pathlib import Path
 import inspect
 import cachetools
 import functools
+import collections
 
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
@@ -100,14 +101,52 @@ class CallInfo:
 
 
 class Cache:
-    ENABLE = True
+    CACHE = True
+    GUESS = True
 
-    def __init__(self):
-        self._cache = {} # cachetools.LRUCache(maxsize=100000)
+    def __init__(self, intr: 'Interpreter'):
+        self._cache = cachetools.LRUCache(maxsize=10_000)
+        self.intr = intr
+        self.counter = collections.Counter()
+        self.knowledge: List[Tuple[SymbolEntry, List[NaturalList]]] = []
+        if Cache.GUESS:
+            self.load_knowledge()
+
+    def load_knowledge(self):
+        from .lib.basics import Basics
+        basics = Basics(self.intr)
+        all_symbols = {ent.symbol: ent for ent in basics.export_symbols()}
+        for sym in ('Add', 'Sub', 'Pred', 'Mul', 'Pow', 'Mod'):
+            if sym not in all_symbols:
+                debug(sym, 'not found in basics')
+                continue
+            ent = all_symbols[sym]
+            tests = []
+            for _ in range(4):
+                tests.append(self.generate_test(ent.ftype.narg, 0, 10))
+            for _ in range(4):
+                tests.append(self.generate_test(ent.ftype.narg, 0, 100))
+            self.knowledge.append((ent, tests))
+        for sym in ('IsZero', 'IsOne', 'Sgn'):
+            if sym not in all_symbols:
+                debug(sym, 'not found in basics')
+                continue
+            ent = all_symbols[sym]
+            tests = []
+            for i in range(4):
+                tests.append(self.generate_test(1, i, i))
+            for _ in range(4):
+                tests.append(self.generate_test(1, 0, 100))
+            self.knowledge.append((ent, tests))
+
+    def generate_test(self, narg: int, a: int, b: int):
+        if a == b:
+            return NaturalList([Natural(a) for _ in range(narg)])
+        return NaturalList([Natural(random.randint(a, b)) for _ in range(narg)])
 
     def predicate(self, info: CallInfo):
         # Is it suitable for caching?
-        if info.blist is not None and info.blist.prev is not None:
+        if info.blist is not None:
             return False
         if info.fexpr.c_ftype.instant:
             return False
@@ -118,25 +157,54 @@ class Cache:
         return True
 
     def search(self, root, blist, args):
-        if not Cache.ENABLE:
+        if not Cache.CACHE:
             return None
         info = CallInfo(root, blist, args)
         if not self.predicate(info):
             return None
+        if getattr(info.fexpr, 'c_guess', None) is not None:
+            syment: SymbolEntry = info.fexpr.c_guess
+            return syment.call(blist, args)
         if info not in self._cache:
             debug('cache miss', info)
             return None
         debug('cache hit', info)
         return self._cache[info]
+    
+    def guess(self, info: CallInfo):
+        info.fexpr.c_guess = None
+        for guess, tests in self.knowledge:
+            if guess.ftype.narg != info.fexpr.c_ftype.narg:
+                continue
+            debug('trying', info, guess.symbol)
+            ok = True
+            for args in tests:
+                debug('=', info.text, guess.symbol, '->', args.content)
+                expected = guess.call(None, args)
+                got = self.intr.interpret_fexpr(info.fexpr, info.blist, args)
+                if not expected.hard_equal(got):
+                    ok = False
+                    break
+            if ok:
+                info.fexpr.c_guess = guess
+                debug('guessed', guess.symbol, 'for', info.text)
+                del self.counter[info.text]
+                break
 
     def write(self, root, blist, args, result):
-        if not Cache.ENABLE:
+        if not Cache.CACHE:
             return
         info = CallInfo(root, blist, args)
         if not self.predicate(info):
             return
+        if getattr(info.fexpr, 'c_guess', None) is not None:
+            return
         info.args = info.args.copy()
         self._cache[info] = result
+        if Cache.GUESS:
+            self.counter[info.text] += 1
+            if not hasattr(info.fexpr, 'c_guess') and self.counter[info.text] >= 16:
+                self.guess(info)
 
 
 class MessageType(Enum):
@@ -220,7 +288,7 @@ class Interpreter:
         self.messages: List[Message] = []
         self.has_error = False
 
-        self.cache = Cache()
+        self.cache = Cache(self)
 
     def add_message(self, msg: Message):
         self.messages.append(msg)

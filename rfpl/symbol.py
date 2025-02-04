@@ -15,13 +15,13 @@ class BaseList:
             return False
         if len(self.args) != len(other.args):
             return False
-        if any(a.c_ix != b.c_ix for a, b in zip(self.args, other.args)):
+        if any(a.getText() != b.getText() for a, b in zip(self.args, other.args)):
             return False
         return self.prev == other.prev
 
     def __hash__(self):
-        ixs = tuple(a.c_ix for a in self.args)
-        return hash((ixs, self.prev))
+        argshash = tuple(hash(a.getText()) for a in self.args)
+        return hash((argshash, self.prev))
 
 @dataclass
 class FunctionType:
