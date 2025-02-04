@@ -207,13 +207,16 @@ class Natural:
             return self.__natural == other.__natural
         return int(self) == int(other)
     
-    def __eq__(self, other: 'Natural'):
-        # Soft equality in the python sense. Used for caching.
+    def soft_equal(self, other: 'Natural'):
+        # Soft equality in the python sense.
         if not self.is_defined():
             return not other.is_defined()
         if isinstance(self.__natural, list):
             return isinstance(other.__natural, list) and self.__natural == other.__natural
         return isinstance(other.__natural, int) and self.__natural == other.__natural
+    
+    def __eq__(self, other: 'Natural'):
+        return self.hard_equal(other)
         
     def __hash__(self):
         if not self.is_defined():

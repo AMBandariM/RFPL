@@ -86,12 +86,25 @@ class CallInfo:
     def text(self):
         return self.fexpr.getText()
     
-    @functools.cached_property
+    @property
     def hash(self):
-        return hash((self.text, self.blist, self.args))
+        return hash((self.fexpr.c_ix, self.blist, self.args))
+    
+    @property
+    def predicate(self):
+        # Is it suitable for caching?
+        # if self.blist is not None:
+        #     return False
+        if self.fexpr.c_ftype.instant:
+            return False
+        for nat in self.args.content:
+            sz = nat.size()
+            if sz is None or sz >= 64:
+                return False
+        return True
     
     def __eq__(self, other: 'CallInfo'):
-        return self.text == other.text and self.blist == other.blist and self.args == other.args
+        return self.fexpr.c_ix == other.fexpr.c_ix and self.blist == other.blist and self.args == other.args
     
     def __hash__(self):
         return self.hash
@@ -144,32 +157,20 @@ class Cache:
             return NaturalList([Natural(a) for _ in range(narg)])
         return NaturalList([Natural(random.randint(a, b)) for _ in range(narg)])
 
-    def predicate(self, info: CallInfo):
-        # Is it suitable for caching?
-        if info.blist is not None:
-            return False
-        if info.fexpr.c_ftype.instant:
-            return False
-        for nat in info.args.content:
-            sz = nat.size()
-            if sz is None or sz >= 64:
-                return False
-        return True
-
     def search(self, root, blist, args):
         if not Cache.CACHE:
             return None
         info = CallInfo(root, blist, args)
-        if not self.predicate(info):
-            return None
+        if not info.predicate:
+            return info, None
         if getattr(info.fexpr, 'c_guess', None) is not None:
             syment: SymbolEntry = info.fexpr.c_guess
-            return syment.call(blist, args)
+            return info, syment.call(blist, args)
         if info not in self._cache:
             debug('cache miss', info)
-            return None
+            return info, None
         debug('cache hit', info)
-        return self._cache[info]
+        return info, self._cache[info]
     
     def guess(self, info: CallInfo):
         info.fexpr.c_guess = None
@@ -188,14 +189,12 @@ class Cache:
             if ok:
                 info.fexpr.c_guess = guess
                 debug('guessed', guess.symbol, 'for', info.text)
-                del self.counter[info.text]
                 break
 
-    def write(self, root, blist, args, result):
+    def write(self, info: CallInfo, result: Natural):
         if not Cache.CACHE:
             return
-        info = CallInfo(root, blist, args)
-        if not self.predicate(info):
+        if not info.predicate:
             return
         if getattr(info.fexpr, 'c_guess', None) is not None:
             return
@@ -289,24 +288,25 @@ class Interpreter:
         self.has_error = False
 
         self.cache = Cache(self)
+        self.fexpr_ix = 0
 
     def add_message(self, msg: Message):
         self.messages.append(msg)
         if msg.typ in (MessageType.ERROR, MessageType.EXCEPTION):
             self.has_error = True
 
-    def interpret_fexpr(self, root, blist: BaseList, args: NaturalList, strict: bool = False) -> Natural:
-        result = self.cache.search(root, blist, args)
+    def interpret_fexpr(self, root, blist: BaseList, args: NaturalList) -> Natural:
+        info, result = self.cache.search(root, blist, args)
         if result is not None:
             return result
-        result = self._interpret_fexpr(root, blist, args, strict)
-        self.cache.write(root, blist, args, result)
+        result = self._interpret_fexpr(root, blist, args)
+        self.cache.write(info, result)
         return result
 
     def _interpret_fexpr(self, root, blist: BaseList, args: NaturalList, strict: bool = False) -> Natural:
         tree = root.getChild(0)
         if not strict and tree.getToken(RFPLParser.Lazy, 0) is not None:
-            return Natural(lambda args=args.copy() : self.interpret_fexpr(root, blist, args, strict=True))
+            return Natural(lambda args=args.copy() : self._interpret_fexpr(root, blist, args, strict=True))
         if isinstance(tree, RFPLParser.FexprleafContext):
             bnxt = None
             if tree.fexprlist() is not None:
@@ -521,6 +521,8 @@ class Interpreter:
             raise Exception(f'Unknown node {type(tree)}')
 
         root.c_ftype = ftype
+        root.c_ix = self.fexpr_ix
+        self.fexpr_ix += 1
         return ftype
     
     def interpret(self, line: str) -> bool:
