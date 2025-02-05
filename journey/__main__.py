@@ -333,7 +333,7 @@ class Challenge(Act):
         syment = intr.symbol_table.table[-1]
         target = challengeFunctions[self.target]
         if syment.ftype.narg != target['narg']:
-            typewriter(f'\'{self.target}\' gets {target['narg']} arguments but \'{syment.symbol}\' gets {syment.ftype.narg} arguments!')
+            typewriter(f'\'{self.target}\' gets {target["narg"]} arguments but \'{syment.symbol}\' gets {syment.ftype.narg} arguments!')
             return False
         if syment.ftype.nbase > 0:
             typewriter(f'\'{syment.symbol}\' is not a finished function.')
@@ -346,7 +346,7 @@ class Challenge(Act):
             expected = challengeFunctions[self.target]['func'](args)
             actual = syment.call([], args)
             if int(expected) != int(actual):
-                typewriter(f'Oh, it\'s not working with input ({', '.join([str(n) for n in test])})')
+                typewriter(f'Oh, it\'s not working with input ({", ".join([str(n) for n in test])})')
                 return False
         typewriter(f'Congraduations!' if self.target else 'Good.')
         return True
@@ -461,7 +461,7 @@ class Journey:
                                highlights=['parsa.alizadeh1@gmail.com', 'ambandarim@gmail.com'])
                     if self.writerContact and self.writerContact['email'] not in ['parsa.alizadeh1@gmail.com', 'ambandarim@gmail.com']:
                         typewriter('Language support:\n' +
-                                  f'  {self.writerContact['fullname']} [{self.writerContact['email']}]',
+                                  f'  {self.writerContact["fullname"]} [{self.writerContact["email"]}]',
                                   highlights=[self.writerContact['email']])
                 elif cmd == 'end':
                     running = False

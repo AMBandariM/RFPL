@@ -33,7 +33,7 @@
             {
                 "type": "typewriter",
                 "content": "But what can we construct using only Constant and Identity functions?\nAny composition(?) of these functions would still be ether Constant or Identity. :(\nSo let me intoduce the function `S` (S stands for Successor).\nThis function returns next number after its (first) input:",
-                "highlights": ["composition", "`S`"]
+                "highlights": ["composition", "`S`", "Successor"]
             },
             {
                 "type": "print",
@@ -68,7 +68,7 @@
         "jobs": [
             {
                 "type": "typewriter",
-                "content": "Yes, that playing-around was cool, but we didn't introduce any new functions—just new values!\nWe said we are interested in constructing (complex) fucntions!\nSo let's define new functions using `=` (big surprise!).\nFor example, `a = S` means `a` is a function that behaves exactly like `S`.",
+                "content": "Yes, that playing-around was cool, but we didn't introduce any new functions‌—just new values!\nWe said we are interested in constructing (complex) fucntions!\nSo let's define new functions using `=` (big surprise!).\nFor example, `a = S` means `a` is a function that behaves exactly like `S`.",
                 "highlights": ["new functions", "exactly", "`=`"]
             },
             {
