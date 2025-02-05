@@ -6,6 +6,8 @@ import re
 import os
 from prompt_toolkit import print_formatted_text as print
 import antlr4
+import argparse
+import sys
 
 from .RFPLLexer import RFPLLexer
 from .interpreter import Interpreter, Message, MessageType
@@ -127,8 +129,22 @@ def mainloop():
         print()
 
 
+def get_version():
+    from importlib.metadata import version
+    try:
+        return version('rfpl')
+    except:
+        return '?'
+
+
 def main():
     global intr
+    parser = argparse.ArgumentParser(
+        prog='rfpl',
+        description='Recursive functional programming language',
+        epilog=f'rfpl v{get_version()}'
+    )
+    args = parser.parse_args()
     intr = Interpreter()
     try:
         mainloop()
