@@ -68,7 +68,7 @@
         "jobs": [
             {
                 "type": "typewriter",
-                "content": "Yes, that playing-around was cool, but we didn't introduce any new functions‌—just new values!\nWe said we are interested in constructing (complex) fucntions!\nSo let's define new functions using `=` (big surprise!).\nFor example, `a = S` means `a` is a function that behaves exactly like `S`.",
+                "content": "Yes, that playing-around was cool, but we didn't introduce any new functions-just new values!\nWe said we are interested in constructing (complex) fucntions!\nSo let's define new functions using `=` (big surprise!).\nFor example, `a = S` means `a` is a function that behaves exactly like `S`.",
                 "highlights": ["new functions", "exactly", "`=`"]
             },
             {
