@@ -1,4 +1,6 @@
 import sys
+sys.setrecursionlimit(10_000_000)
+
 import importlib.util
 from importlib.machinery import SourceFileLoader
 import hashlib
@@ -118,7 +120,7 @@ class Cache:
     GUESS = True
 
     def __init__(self, intr: 'Interpreter'):
-        self._cache = cachetools.LRUCache(maxsize=10_000)
+        self._cache = {} # cachetools.LRUCache(maxsize=10_000)
         self.intr = intr
         self.counter = collections.Counter()
         self.knowledge: List[Tuple[SymbolEntry, List[NaturalList]]] = []
@@ -129,6 +131,7 @@ class Cache:
         from .lib.basics import Basics
         basics = Basics(self.intr)
         all_symbols = {ent.symbol: ent for ent in basics.export_symbols()}
+        random.seed(42)
         for sym in ('Add', 'Sub', 'Pred', 'Mul', 'Pow', 'Mod'):
             if sym not in all_symbols:
                 debug(sym, 'not found in basics')
@@ -158,14 +161,14 @@ class Cache:
         return NaturalList([Natural(random.randint(a, b)) for _ in range(narg)])
 
     def search(self, root, blist, args):
-        if not Cache.CACHE:
-            return None
         info = CallInfo(root, blist, args)
         if not info.predicate:
             return info, None
         if getattr(info.fexpr, 'c_guess', None) is not None:
             syment: SymbolEntry = info.fexpr.c_guess
             return info, syment.call(blist, args)
+        if not Cache.CACHE:
+            return info, None
         if info not in self._cache:
             debug('cache miss', info)
             return info, None
@@ -177,10 +180,10 @@ class Cache:
         for guess, tests in self.knowledge:
             if guess.ftype.narg != info.fexpr.c_ftype.narg:
                 continue
-            debug('trying', info, guess.symbol)
+            # debug('trying', info, guess.symbol)
             ok = True
             for args in tests:
-                debug('=', info.text, guess.symbol, '->', args.content)
+                # debug('=', info.text, guess.symbol, '->', args.content)
                 expected = guess.call(None, args)
                 got = self.intr.interpret_fexpr(info.fexpr, info.blist, args)
                 if not expected.hard_equal(got):
@@ -192,14 +195,13 @@ class Cache:
                 break
 
     def write(self, info: CallInfo, result: Natural):
-        if not Cache.CACHE:
-            return
         if not info.predicate:
             return
         if getattr(info.fexpr, 'c_guess', None) is not None:
             return
-        info.args = info.args.copy()
-        self._cache[info] = result
+        if Cache.CACHE and info not in self._cache:
+            info.args = info.args.copy()
+            self._cache[info] = result
         if Cache.GUESS:
             self.counter[info.text] += 1
             if not hasattr(info.fexpr, 'c_guess') and self.counter[info.text] >= 16:
@@ -339,6 +341,8 @@ class Interpreter:
         elif isinstance(tree, RFPLParser.BuiltinPrContext):
             f = tree.fexpr(0)
             g = tree.fexpr(1)
+            if not args[0].is_defined():
+                return Natural(None)
             n = int(args[0])
             args = args.drop(1)
             cur = self.interpret_fexpr(f, blist, args)
