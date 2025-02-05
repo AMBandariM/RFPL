@@ -2,8 +2,9 @@
 
 from dataclasses import dataclass, field
 from typing import List, Dict, Callable
-from .RFPLParser import RFPLParser
+
 from .natural import Natural, NaturalList
+from .RFPLParser import RFPLParser
 
 @dataclass
 class BaseList:

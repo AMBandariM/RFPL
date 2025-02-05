@@ -1,11 +1,12 @@
-from prompt_toolkit import PromptSession, ANSI
-from prompt_toolkit.patch_stdout import patch_stdout
-from prompt_toolkit.lexers import Lexer
-from prompt_toolkit.styles import Style
-import re
-import os
-from prompt_toolkit import print_formatted_text as print
 import antlr4
+import argparse
+import os
+import re
+from prompt_toolkit import print_formatted_text as print
+from prompt_toolkit import PromptSession, ANSI
+from prompt_toolkit.lexers import Lexer
+from prompt_toolkit.patch_stdout import patch_stdout
+from prompt_toolkit.styles import Style
 
 from .RFPLLexer import RFPLLexer
 from .interpreter import Interpreter, Message, MessageType
@@ -77,18 +78,17 @@ def multiline_input():
 
 
 hist = ''
-def save(filename:str):
+def save(filename: str):
     filename += '.rfpl'
     if os.path.exists(filename):
-        print(f'{C_RED}sorry, this file exists.{C_RESET}\n')
+        print(ANSI(f'{C_RED}sorry, this file exists.{C_RESET}\n'))
     else:
         with open(filename, 'w') as f:
             f.write(hist)
-            print(f'   {C_GREEN}saved on {filename}{C_RESET}\n')
+            print(ANSI(f'   {C_GREEN}saved on {filename}{C_RESET}\n'))
 
-def main():
-    global intr, hist
-    intr = Interpreter()
+def mainloop():
+    global hist, intr
     while True:
         try:
             line = multiline_input()
@@ -126,6 +126,29 @@ def main():
             elif msg.typ == MessageType.EXCEPTION:
                 print(ANSI(f' {C_RED}* EXCEPTION: {msg.message}{C_RESET}'))
         print()
+
+
+def get_version():
+    from importlib.metadata import version
+    try:
+        return version('rfpl')
+    except:
+        return '?'
+
+
+def main():
+    global intr
+    parser = argparse.ArgumentParser(
+        prog='rfpl',
+        description='Recursive functional programming language',
+        epilog=f'rfpl v{get_version()}'
+    )
+    args = parser.parse_args()
+    intr = Interpreter()
+    try:
+        mainloop()
+    except KeyboardInterrupt:
+        print('KeyboardInterrupt')
 
 
 if __name__ == '__main__':

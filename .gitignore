@@ -9,3 +9,5 @@ test.*
 __pycache__
 venv
 *.egg-info
+dist
+build

@@ -1,13 +1,14 @@
-from typing import Union, List, Callable
 import hashlib
+from typing import Union, List, Callable
+
 from .RFPLParser import RFPLParser
 
-primes = [2, 3, 5, 7]
+primes = [2, 3, 5, 7, 11, 13]
 
 def get_prime(i):
     if i < len(primes):
         return primes[i]
-    cur = primes[-1] + 1
+    cur = primes[-1] + 2
     while len(primes) <= i:
         isprime = True
         for div in primes:
@@ -18,7 +19,7 @@ def get_prime(i):
                 break
         if isprime:
             primes.append(cur)
-        cur += 1
+        cur += 2
     return primes[i]
 
 
