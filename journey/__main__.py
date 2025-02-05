@@ -15,6 +15,7 @@ from rfpl.symbol import SymbolEntry, FunctionType
 from abc import ABC, abstractmethod
 import re
 from prompt_toolkit import PromptSession
+from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.styles import Style
@@ -115,6 +116,34 @@ def typewriter(text, highlights=[], end='\n'):
         time.sleep(random.uniform(0.06 * t, 0.12 * t))
     print(C_RESET, end=end, flush=True)
 
+
+from prompt_toolkit.completion import Completer, Completion
+
+class SimpleCommandCompleter(Completer):
+    def __init__(self, commands, ignore_case=True):
+        self.commands = commands
+        self.ignore_case = ignore_case
+
+    def get_completions(self, document, complete_event):
+        word = document.text_before_cursor
+        if word[-1] == ' ':
+            return
+        word = [prt for prt in word.split(' ') if len(prt) > 0]
+        if len(word) != 1:
+            return
+        word = word[0]
+
+        if self.ignore_case:
+            word = word.lower()
+
+        for cmd in self.commands:
+            if self.ignore_case:
+                cmd_lower = cmd.lower()
+                if cmd_lower.startswith(word):
+                    yield Completion(cmd, start_position=-len(word))
+            else:
+                if cmd.startswith(word):
+                    yield Completion(cmd, start_position=-len(word))
 
 
 class SideNotes:
@@ -442,6 +471,8 @@ class Journey:
                 if act.runnable():
                     runnables_starters.append(act.starter)
                     runnables[act.starter] = act
+            commands = ['notes', 'contact', 'end'] + runnables_starters
+            completer = SimpleCommandCompleter(commands, ignore_case=True)
             while True:
                 typewriter('Chose an option:', end='')
                 for starter in runnables_starters:
@@ -451,7 +482,7 @@ class Journey:
                 print(f' - notes            {C_GREY}to see notes{C_RESET}\n' +
                       f' - contact          {C_GREY}to see our contact information{C_RESET}\n'
                       f' - end              {C_GREY}to end this journey{C_RESET}\n')
-                cmd = self.session.prompt('$$ ')
+                cmd = self.session.prompt('$$ ', completer=completer).strip()
                 if cmd == 'notes':
                     self.sidenotes.run()
                 elif cmd == 'contact':
