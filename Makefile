@@ -4,6 +4,10 @@ run: ${ANTLRFILES}
 	python -m rfpl
 .PHONY: run
 
+journey:${ANTLRFILES}
+	python -m journey
+.PHONY:
+
 build: ${ANTLRFILES}
 .PHONY: build
 
