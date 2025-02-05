@@ -77,18 +77,17 @@ def multiline_input():
 
 
 hist = ''
-def save(filename:str):
+def save(filename: str):
     filename += '.rfpl'
     if os.path.exists(filename):
-        print(f'{C_RED}sorry, this file exists.{C_RESET}\n')
+        print(ANSI(f'{C_RED}sorry, this file exists.{C_RESET}\n'))
     else:
         with open(filename, 'w') as f:
             f.write(hist)
-            print(f'   {C_GREEN}saved on {filename}{C_RESET}\n')
+            print(ANSI(f'   {C_GREEN}saved on {filename}{C_RESET}\n'))
 
-def main():
-    global intr, hist
-    intr = Interpreter()
+def mainloop():
+    global hist, intr
     while True:
         try:
             line = multiline_input()
@@ -126,6 +125,15 @@ def main():
             elif msg.typ == MessageType.EXCEPTION:
                 print(ANSI(f' {C_RED}* EXCEPTION: {msg.message}{C_RESET}'))
         print()
+
+
+def main():
+    global intr
+    intr = Interpreter()
+    try:
+        mainloop()
+    except KeyboardInterrupt:
+        print('KeyboardInterrupt')
 
 
 if __name__ == '__main__':

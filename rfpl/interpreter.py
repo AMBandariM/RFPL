@@ -596,14 +596,19 @@ class Interpreter:
 
     def report(self, line: str, clear: bool = True) -> Tuple[bool, List[Message]]:
         line = line.strip()
+        ok = False
         try:
             ok = self.interpret(line)
+        except KeyboardInterrupt:
+            self.messages.append(Message(
+                typ=MessageType.EXCEPTION,
+                message='KeyboardInterrupt'
+            ))
         except Exception:
             self.messages.append(Message(
                 typ=MessageType.EXCEPTION,
                 message=traceback.format_exc().strip()
             ))
-            ok = False
         for msg in self.messages:
             msg.add_context(line)
         if clear:
