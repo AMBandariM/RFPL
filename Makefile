@@ -6,7 +6,7 @@ run: ${ANTLRFILES}
 
 journey:${ANTLRFILES}
 	python -m journey
-.PHONY:
+.PHONY: journey
 
 build: ${ANTLRFILES}
 .PHONY: build
