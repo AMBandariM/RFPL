@@ -1,22 +1,22 @@
-import sys
-import importlib.util
-from importlib.machinery import SourceFileLoader
 import hashlib
+import importlib.util
+import inspect
+import random
+import sys
 import traceback
 from antlr4 import *
-from dataclasses import dataclass, field
 from antlr4.error.ErrorListener import ErrorListener
-from typing import Union, List, Dict, Tuple, Callable
-import random
+from dataclasses import dataclass
 from enum import Enum
+from importlib.machinery import SourceFileLoader
 from pathlib import Path
-import inspect
+from typing import Union, List, Tuple
 
+from .natural import Natural, NaturalList
 from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
-from .natural import Natural, NaturalList
-from .symbol import BaseList, FunctionType, SymbolEntry
 from .rfpy import RFPYModule
+from .symbol import BaseList, FunctionType, SymbolEntry
 
 DEBUG = True
 LIB_PATH = Path(__file__).parent / 'lib'

@@ -1,13 +1,12 @@
-from prompt_toolkit import PromptSession, ANSI
-from prompt_toolkit.patch_stdout import patch_stdout
-from prompt_toolkit.lexers import Lexer
-from prompt_toolkit.styles import Style
-import re
-import os
-from prompt_toolkit import print_formatted_text as print
 import antlr4
 import argparse
-import sys
+import os
+import re
+from prompt_toolkit import print_formatted_text as print
+from prompt_toolkit import PromptSession, ANSI
+from prompt_toolkit.lexers import Lexer
+from prompt_toolkit.patch_stdout import patch_stdout
+from prompt_toolkit.styles import Style
 
 from .RFPLLexer import RFPLLexer
 from .interpreter import Interpreter, Message, MessageType

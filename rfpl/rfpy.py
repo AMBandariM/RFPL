@@ -1,7 +1,8 @@
-from typing import Callable, List
 from dataclasses import dataclass
-from .symbol import BaseList, FunctionType, SymbolEntry
+from typing import Callable, List
+
 from .natural import NaturalList
+from .symbol import BaseList, FunctionType, SymbolEntry
 
 
 @dataclass
