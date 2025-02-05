@@ -456,10 +456,10 @@ class Journey:
                     self.sidenotes.run()
                 elif cmd == 'contact':
                     typewriter('RFPL core team:\n' +
-                               '  Parsa Alizadeh [parsa@gmail.com]\n' +
-                               '  AmirMohammad Bandari Masoole [doctor@gmail.com]',
-                               highlights=['parsa@gmail.com', 'doctor@gmail.com'])
-                    if self.writerContact and self.writerContact['email'] not in ['parsa@gmail.com', 'doctor@gmail.com']:
+                               '  Parsa Alizadeh [parsa.alizadeh1@gmail.com]\n' +  # just used the email address public in github
+                               '  AmirMohammad Bandari Masoole [ambandarim@gmail.com]',
+                               highlights=['parsa.alizadeh1@gmail.com', 'ambandarim@gmail.com'])
+                    if self.writerContact and self.writerContact['email'] not in ['parsa.alizadeh1@gmail.com', 'ambandarim@gmail.com']:
                         typewriter('Language support:\n' +
                                   f'  {self.writerContact['fullname']} [{self.writerContact['email']}]',
                                   highlights=[self.writerContact['email']])
