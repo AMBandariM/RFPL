@@ -1,5 +1,6 @@
 import hashlib
-from typing import Union, List, Callable
+from collections.abc import Callable
+from typing import Union
 
 from .RFPLParser import RFPLParser
 
@@ -26,7 +27,7 @@ def get_prime(i):
 class Natural:
     __slots__ = ('__natural',)
 
-    def __init__(self, natural: Union[int, List['Natural'], Callable[[], 'Natural']]):
+    def __init__(self, natural: Union[int, list['Natural'], Callable[[], 'Natural']]):
         if isinstance(natural, int) and natural < 0:
             raise Exception(f'Cannot initialize natural with negative number {natural}')
         self.__natural = natural
@@ -212,7 +213,7 @@ class Natural:
 
 
 class NaturalList:
-    def __init__(self, content: List[Natural]=None):
+    def __init__(self, content: list[Natural] = None):
         self.content = content or []
 
     def copy(self):

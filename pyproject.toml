@@ -24,6 +24,7 @@ journey = "journey.__main__:main"
 
 [tool.setuptools.packages.find]
 namespaces = false
+exclude = ["tests*"]
 
 [tool.setuptools_scm]
 version_scheme = "no-guess-dev"

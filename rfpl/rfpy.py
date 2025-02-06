@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, List
+from collections.abc import Callable
 
 from .natural import NaturalList
 from .symbol import BaseList, FunctionType, SymbolEntry
@@ -17,7 +17,7 @@ class RFPYModule:
         # I really love to add type info for interpreter, without introducing circular imports
         self.interpreter = interpreter
 
-    def export_symbols(self) -> List[SymbolEntry]:
+    def export_symbols(self) -> list[SymbolEntry]:
         symbols = []
         for name in dir(self):
             func = getattr(self, name)
