@@ -91,9 +91,25 @@ def multiline_input():
                 break
     return cmd
 
+def line_breaker(lines, lim):
+    res = []
+    for line in lines:
+        parts = line.split(' ')
+        res.append(parts[0])
+        cnt = len(parts[0])
+        for part in parts[1:]:
+            if cnt + len(part) < lim:
+                res[-1] += ' ' + part
+                cnt += 1 + len(part)
+            else:
+                res.append(part)
+                cnt = len(part)
+    return res
+
 def typewriter(text, highlights=[], end='\n'):
     t = 0 if DEBUG else 1
     lines = text.split('\n')
+    lines = line_breaker(lines, shutil.get_terminal_size()[0] - 3)
     fst = True
     print(C_BLUE, end='', flush=True)
     for line in lines:
@@ -103,7 +119,6 @@ def typewriter(text, highlights=[], end='\n'):
         fst = False
         for char in line:
             print(char, end='', flush=True)
-
             if char in '.!?':
                 time.sleep(random.uniform(0.2 * t, 0.3 * t))
             elif char in ',;:':
@@ -116,8 +131,6 @@ def typewriter(text, highlights=[], end='\n'):
         time.sleep(random.uniform(0.06 * t, 0.12 * t))
     print(C_RESET, end=end, flush=True)
 
-
-from prompt_toolkit.completion import Completer, Completion
 
 class SimpleCommandCompleter(Completer):
     def __init__(self, commands, ignore_case=True):
@@ -289,8 +302,7 @@ challengeFunctions = {
     'fib': {
         'func': lambda args : Natural(__fib(int(args[0]))),
         'narg': 2
-    },
-    
+    }
 }
 assumedFunctions = {
     'Add': SymbolEntry(
@@ -322,8 +334,7 @@ assumedFunctions = {
         call=lambda _blist, args : args[0] % args[1],
         builtin=True,
         ftype=FunctionType(narg=2),
-    ),
-
+    )
 }
 class Challenge(Act):
     def __init__(self, journey, starter: str, prerequisites: List[Act], target: str,
@@ -465,43 +476,48 @@ class Journey:
     def run(self):
         running = True
         while running:
-            runnables_starters = []
-            runnables = {}
-            for act in self.acts:
-                if act.runnable():
-                    runnables_starters.append(act.starter)
-                    runnables[act.starter] = act
-            commands = ['notes', 'contact', 'end'] + runnables_starters
-            completer = SimpleCommandCompleter(commands, ignore_case=True)
-            while True:
-                typewriter('Chose an option:', end='')
-                for starter in runnables_starters:
-                    part1 = f' - {starter}' + ' '*20
-                    part2 = runnables[starter].target if isinstance(runnables[starter], Challenge) else ''
-                    print(part1[:20] + f'{C_GREY}{part2}{C_RESET}')
-                print(f' - notes            {C_GREY}to see notes{C_RESET}\n' +
-                      f' - contact          {C_GREY}to see our contact information{C_RESET}\n'
-                      f' - end              {C_GREY}to end this journey{C_RESET}\n')
-                cmd = self.session.prompt('$$ ', completer=completer).strip()
-                if cmd == 'notes':
-                    self.sidenotes.run()
-                elif cmd == 'contact':
-                    typewriter('RFPL core team:\n' +
-                               '  Parsa Alizadeh [parsa.alizadeh1@gmail.com]\n' +  # just used the email address public in github
-                               '  AmirMohammad Bandari Masoole [ambandarim@gmail.com]',
-                               highlights=['parsa.alizadeh1@gmail.com', 'ambandarim@gmail.com'])
-                    if self.writerContact and self.writerContact['email'] not in ['parsa.alizadeh1@gmail.com', 'ambandarim@gmail.com']:
-                        typewriter('Language support:\n' +
-                                  f'  {self.writerContact["fullname"]} [{self.writerContact["email"]}]',
-                                  highlights=[self.writerContact['email']])
-                elif cmd == 'end':
-                    running = False
-                    break
-                elif cmd in runnables_starters:
-                    break
-            if cmd in runnables_starters:
-                runnables[cmd].run()
-
+            try:
+                runnables_starters = []
+                runnables = {}
+                for act in self.acts:
+                    if act.runnable():
+                        runnables_starters.append(act.starter)
+                        runnables[act.starter] = act
+                commands = ['notes', 'contact', 'end'] + runnables_starters
+                completer = SimpleCommandCompleter(commands, ignore_case=True)
+                while True:
+                    typewriter('Chose an option:', end='')
+                    for starter in runnables_starters:
+                        part1 = f' - {starter}' + ' '*20
+                        part2 = runnables[starter].target if isinstance(runnables[starter], Challenge) else ''
+                        print(part1[:20] + f'{C_GREY}{part2}{C_RESET}')
+                    print(f' - notes            {C_GREY}to see notes{C_RESET}\n' +
+                        f' - contact          {C_GREY}to see our contact information{C_RESET}\n'
+                        f' - end              {C_GREY}to end this journey{C_RESET}\n')
+                    cmd = self.session.prompt('$$ ', completer=completer).strip()
+                    if cmd == 'notes':
+                        self.sidenotes.run()
+                    elif cmd == 'contact':
+                        typewriter('RFPL core team:\n' +
+                                '  Parsa Alizadeh [parsa.alizadeh1@gmail.com]\n' +  # just used the email address public in github
+                                '  AmirMohammad Bandari Masoole [ambandarim@gmail.com]',
+                                highlights=['parsa.alizadeh1@gmail.com', 'ambandarim@gmail.com'])
+                        if self.writerContact and self.writerContact['email'] not in ['parsa.alizadeh1@gmail.com', 'ambandarim@gmail.com']:
+                            typewriter('Language support:\n' +
+                                    f'  {self.writerContact["fullname"]} [{self.writerContact["email"]}]',
+                                    highlights=[self.writerContact['email']])
+                    elif cmd == 'end':
+                        running = False
+                        break
+                    elif cmd in runnables_starters:
+                        break
+                if cmd in runnables_starters:
+                    runnables[cmd].run()
+            except KeyboardInterrupt:
+                pass
+            except EOFError:
+                running = False
+                break
 
 def main():
     jrny = Journey(Path(__file__).parent / 'journey_en.json')
