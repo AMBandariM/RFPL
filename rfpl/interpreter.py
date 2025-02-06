@@ -4,13 +4,13 @@ import inspect
 import random
 import sys
 import traceback
-from antlr4 import *
+from antlr4 import ParserRuleContext, Token, InputStream, CommonTokenStream
 from antlr4.error.ErrorListener import ErrorListener
 from dataclasses import dataclass
 from enum import Enum
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
-from typing import Union, List, Tuple
+from typing import Union
 
 from .natural import Natural, NaturalList
 from .RFPLLexer import RFPLLexer
@@ -43,7 +43,7 @@ def dict_max_eq(d: dict, k, v):
 class SymbolTable:
     def __init__(self):
         self.temp_layer = [[]]
-        self.table: List[SymbolEntry] = []
+        self.table: list[SymbolEntry] = []
     
     def search(self, symbol: str, index: int = -1): 
         index = len(self.table) - 1
@@ -98,7 +98,7 @@ class HashCache:
         a, b, c = random.randint(0,m), random.randint(0,m), random.randint(0,m)
         return NaturalList([Natural(a), Natural(b), Natural(c), Natural(None), Natural(None)])
 
-    def call_and_cache(self, fun: SymbolEntry, blist: BaseList, args: List[Natural]):
+    def call_and_cache(self, fun: SymbolEntry, blist: BaseList, args: list[Natural]):
         if (blist is not None and len(blist.args)) or fun.builtin or not self.CACHE:
             return fun.call(blist, args)
         if fun.ix not in self.possibleMatches:
@@ -143,7 +143,7 @@ class MessageType(Enum):
 class Message:
     typ: MessageType
     message: str = None
-    context: List[str] = None
+    context: list[str] = None
     natural: Natural = None
     start: int = None
     stop: int = None
@@ -212,7 +212,7 @@ class Interpreter:
         
         self.cache = HashCache([])  # add the funcions here
 
-        self.messages: List[Message] = []
+        self.messages: list[Message] = []
         self.has_error = False
 
     def add_message(self, msg: Message):
@@ -594,7 +594,7 @@ class Interpreter:
         self.add_message(Message.error(f'Unable to find "{module}"'))
         return False
 
-    def report(self, line: str, clear: bool = True) -> Tuple[bool, List[Message]]:
+    def report(self, line: str, clear: bool = True) -> tuple[bool, list[Message]]:
         line = line.strip()
         ok = False
         try:

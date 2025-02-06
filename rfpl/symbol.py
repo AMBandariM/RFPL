@@ -1,14 +1,14 @@
 # my temporary answer to circular imports!
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Callable
+from collections.abc import Callable
 
 from .natural import Natural, NaturalList
 from .RFPLParser import RFPLParser
 
 @dataclass
 class BaseList:
-    args: List[RFPLParser.FexprContext]
+    args: list[RFPLParser.FexprContext]
     prev: 'BaseList' = None
 
 
@@ -16,8 +16,8 @@ class BaseList:
 class FunctionType:
     narg: int = 0
     nbase: int = 0
-    max_narg_b: Dict = field(default_factory=dict)
-    relative_narg_b: Dict = field(default_factory=dict)
+    max_narg_b: dict[int, int] = field(default_factory=dict)
+    relative_narg_b: dict[int, int] = field(default_factory=dict)
 
     # narg is the minimum number of argument this function needs, without considering bases.
     # nbase is the number of base arguments (@0, @1, ...) this function uses.
