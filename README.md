@@ -52,7 +52,7 @@ Although Version 1 of RFPL is complete and published, we have plans for future i
 - **Dependency Management:** Potentially removing ANTLR and other nonessential dependencies.
 
 ### Documentation
-You have to experience the language and read the source code. there is no additional documentation at this time—sorry about that.
+You have to experience the language and read the source code. There is no additional documentation at this time—sorry about that.
 
 ## Contact Information
 - **Parsa Alizadeh** \[[parsa.alizadeh1@gmail.com](mailto:parsa.alizadeh1@gmail.com)\]
