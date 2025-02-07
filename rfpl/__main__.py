@@ -9,6 +9,7 @@ from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.styles import Style
 from importlib.metadata import version
 
+from . import interpreter
 from .RFPLLexer import RFPLLexer
 from .interpreter import Interpreter, MessageType
 
@@ -141,9 +142,15 @@ def main():
     parser = argparse.ArgumentParser(
         prog='rfpl',
         description='Recursive functional programming language',
-        epilog=f'rfpl v{get_version()}'
+        epilog=f'rfpl v{get_version()}',
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        default=0,
+        action='count',
     )
     args = parser.parse_args()
+    interpreter.DEBUG = (args.verbose > 0)
     intr = Interpreter()
     try:
         mainloop()
