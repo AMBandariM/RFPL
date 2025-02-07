@@ -48,7 +48,7 @@ You are welcome to translate the file `./journey/journey_en.json` into your nati
 
 Although Version 1 of RFPL is complete and published, we have plans for future improvements:
 - **Refactoring:** Extracting 'fundamental' functions from the interpreter.
-- **User Experience:** Implementing a robust cache and function-gessing system.
+- **User Experience:** Implementing a robust cache and function-guessing system.
 - **Dependency Management:** Potentially removing ANTLR and other nonessential dependencies.
 
 ### Documentation
