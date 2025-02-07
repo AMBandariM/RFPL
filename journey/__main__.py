@@ -301,7 +301,7 @@ challengeFunctions = {
     },
     'fib': {
         'func': lambda args : Natural(__fib(int(args[0]))),
-        'narg': 2
+        'narg': 1
     }
 }
 assumedFunctions = {
