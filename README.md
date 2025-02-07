@@ -8,7 +8,7 @@ RFPL is a recursive functional programming language designed primarily for educa
 
 #### Easy Way
 
-Clone the repository and use `make` to run RFPL:
+Install ANTLR4. Clone the repository and use `make` to run RFPL:
 
 ```console
 $ git clone https://github.com/AMBandariM/RFPL
@@ -28,8 +28,9 @@ $ pip install rfpl
 Then run:
 
 ```console
-$ python -m rfpl    # Launch RFPL's interactive console
-$ python -m journey # Start "The RFPL Journey"
+$ rfpl      # Launch RFPL's interactive console
+$ journey   # Start "The RFPL Journey"
+$ # or run with `python -m rfpl` and `python -m journey` if there was PATH errors.
 ```
 
 ### VSCode Syntax Highlighter
