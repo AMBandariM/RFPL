@@ -369,6 +369,9 @@ class Challenge(Act):
         return False
 
     def test(self):
+        if len(self.target) == 0:
+            typewriter('Good.')
+            return True
         global intr
         syment = intr.symbol_table.table[-1]
         target = challengeFunctions[self.target]
@@ -388,7 +391,7 @@ class Challenge(Act):
             if int(expected) != int(actual):
                 typewriter(f'Oh, it\'s not working with input ({", ".join([str(n) for n in test])})')
                 return False
-        typewriter(f'Congraduations!' if self.target else 'Good.')
+        typewriter(f'Congraduations!')
         return True
 
     def run(self):

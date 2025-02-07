@@ -359,8 +359,7 @@
             [0],
             [1],
             [2],
-            [3],
-            [4]
+            [3]
         ],
         "limits": ["load", "bracket", "builtinMn", "naturallist"],
         "have": ["Add", "Mul", "Sub", "Mod"],
