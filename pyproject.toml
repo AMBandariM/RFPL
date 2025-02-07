@@ -12,13 +12,14 @@ description = "Recursive Functional Programming Language"
 readme = "README.md"
 dependencies = [
     "prompt_toolkit",
-    "antlr4-python3-runtime"
+    "antlr4-python3-runtime==4.13.2"
 ]
 dynamic = ["version"]
 requires-python = ">= 3.9"
 license = {text = "MIT"}
 classifiers = [
     "Topic :: Software Development :: Interpreters",
+    "Topic :: Scientific/Engineering :: Mathematics",
     "Programming Language :: Python :: 3"
 ]
 
