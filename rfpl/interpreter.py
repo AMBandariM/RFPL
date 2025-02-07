@@ -18,7 +18,7 @@ from .RFPLParser import RFPLParser
 from .rfpy import RFPYModule
 from .symbol import BaseList, FunctionType, SymbolEntry
 
-DEBUG = True
+DEBUG = False
 LIB_PATH = Path(__file__).parent / 'lib'
 
 
