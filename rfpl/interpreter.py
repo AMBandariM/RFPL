@@ -534,9 +534,6 @@ class Interpreter:
                     ok = False
                 cmd = ''
         self.symbol_table.clear_temp_layer(myTempLayerKey)
-        self.add_message(Message.info(
-            f'File "{path}" loaded'
-        ))
         return ok
 
     def load_rfpy_module(self, path: Path) -> bool:
