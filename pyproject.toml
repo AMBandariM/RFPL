@@ -16,7 +16,14 @@ dependencies = [
 ]
 dynamic = ["version"]
 requires-python = ">= 3.9"
-# license, keywords, homepage, ...
+license = {text = "MIT"}
+classifiers = [
+    "Topic :: Software Development :: Interpreters",
+    "Programming Language :: Python :: 3"
+]
+
+[project.urls]
+Homepage = "https://github.com/AMBandariM/RFPL"
 
 [project.scripts]
 rfpl = "rfpl.__main__:main"
