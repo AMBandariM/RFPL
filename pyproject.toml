@@ -26,13 +26,13 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/AMBandariM/RFPL"
 
+[tool.setuptools.package-dir]
+rfpl = "./rfpl"
+journey = "./journey"
+
 [project.scripts]
 rfpl = "rfpl.__main__:main"
 journey = "journey.__main__:main"
-
-[tool.setuptools.packages.find]
-namespaces = false
-exclude = ["tests*"]
 
 [tool.setuptools_scm]
 version_scheme = "no-guess-dev"
