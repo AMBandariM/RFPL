@@ -36,3 +36,6 @@ journey = "journey.__main__:main"
 
 [tool.setuptools_scm]
 version_scheme = "no-guess-dev"
+
+[tool.setuptools.cmdclass]
+build_py = "scripts.build.CustomBuild"

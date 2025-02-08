@@ -11,8 +11,11 @@ journey: ${ANTLRFILES}
 dist: ${ANTLRFILES}
 	rm -rf build/ dist/
 	python tests/test_general.py
-	python -m build --wheel
+	python -m build
 .PHONY: dist
+
+build: ${ANTLRFILES}
+.PHONY: build
 
 ${ANTLRFILES}: RFPL.g4
 	antlr4 -Dlanguage=Python3 -no-listener -no-visitor RFPL.g4 -o rfpl
