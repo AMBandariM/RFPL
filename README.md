@@ -109,20 +109,20 @@ and `Mn`).
 ### Function Type Check
 
 With the introduction of bases, RFPL implements a basic type check to avoid
-errors before the evalutation.
+errors before the evaluation.
 
 ``` clojure
 >> foo = Cn[@0, #0]
->> foo[!2]()
+>> bar = foo[!2]
  ! ERROR: Base @0 of function foo needs 3 arguments, but is limited to at most 1 argument by function foo
-       foo[!2]()
-       ^~~~~~~
+       bar = foo[!2]
+             ^~~~~~~
 ```
 
 ### Lazy Evaluation
 
-RFPL is strict, although it allows some expressions to be evaluated lazily,
-perhaps to improve performace or avoid unnecessary computation.
+RFPL is strict, although it allows some expressions to be evaluated lazily;
+perhaps to improve performance or avoid unnecessary computation.
 
 ``` clojure
 >> add = Pr[!0, Cn[S, !0]]
