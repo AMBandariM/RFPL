@@ -63,9 +63,7 @@ Assuming $0\in\mathbb{N}$, every value is of type $\mathbb{N}$.
 >> _  ; undefined number representing a never-halting computation.
  = Undefined
 ```
-
 </details>
-
 <details>
 <summary><h3>Native Gödel's Encoding</h3></summary>
 
@@ -96,9 +94,7 @@ constructed and processed in this way (see [stack.rfpl](rfpl/lib/stack.rfpl)).
    ;    5   7
 >> <3, <2>, <4, <5>, <7>>>  ; one way to represent a tree
 ```
-
 </details>
-
 <details>
 <summary><h3>Bases</h3></summary>
 
@@ -112,9 +108,7 @@ as input and result in a function as an output.
 
 The syntax of the base allows to mimic the basic operators of RFPL (`Cn`, `Pr`,
 and `Mn`).
-
 </details>
-
 <details>
 <summary><h3>Function Type Check</h3></summary>
 
@@ -128,9 +122,7 @@ errors before the evaluation.
        bar = foo[!2]
              ^~~~~~~
 ```
-
 </details>
-
 <details>
 <summary><h3>Lazy Evaluation</h3></summary>
 
@@ -145,7 +137,6 @@ perhaps to improve performance or avoid unnecessary computation.
 >> mul(0, ~mul(1000, 1000))  ; instant
  = 0
 ```
-
 </details>
 
 ## Development and Contribution
