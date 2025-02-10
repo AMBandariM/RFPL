@@ -67,7 +67,7 @@ Assuming $0\in\mathbb{N}$, every value is of type $\mathbb{N}$.
 </details>
 
 <details>
-<summary><h3>Native Gödel's Encoding</h3><summary>
+<summary><h3>Native Gödel's Encoding</h3></summary>
 
 Positive numbers can be represented as list of numbers based on their
 prime factorization. RFPL supports lists as another representation for values.
@@ -100,7 +100,7 @@ constructed and processed in this way (see [stack.rfpl](rfpl/lib/stack.rfpl)).
 </details>
 
 <details>
-<summary><h3>Bases</h3><summary>
+<summary><h3>Bases</h3></summary>
 
 Second-order functions can be defined using a feature we call "base"; they take functions
 as input and result in a function as an output.
@@ -116,7 +116,7 @@ and `Mn`).
 </details>
 
 <details>
-<summary><h3>Function Type Check</h3><summary>
+<summary><h3>Function Type Check</h3></summary>
 
 With the introduction of bases, RFPL implements a basic type check to avoid
 errors before the evaluation.
@@ -132,7 +132,7 @@ errors before the evaluation.
 </details>
 
 <details>
-<summary><h3>Lazy Evaluation</h3><summary>
+<summary><h3>Lazy Evaluation</h3></summary>
 
 RFPL is strict, although it allows some expressions to be evaluated lazily;
 perhaps to improve performance or avoid unnecessary computation.
