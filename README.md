@@ -65,7 +65,8 @@ Assuming $0\in\mathbb{N}$, every value is of type $\mathbb{N}$.
 ```
 </details>
 
-### Native Gödel's Encoding
+<details>
+<summary><h3>Native Gödel's Encoding</h3><summary>
 
 Positive numbers can be represented as list of numbers based on their
 prime factorization. RFPL supports lists as another representation for values.
@@ -94,8 +95,10 @@ constructed and processed in this way (see [stack.rfpl](rfpl/lib/stack.rfpl)).
    ;    5   7
 >> <3, <2>, <4, <5>, <7>>>  ; one way to represent a tree
 ```
+</details>
 
-### Bases
+<details>
+<summary><h3>Bases</h3><summary>
 
 Second-order functions can be defined using a feature we call "base"; they take functions
 as input and result in a function as an output.
@@ -107,8 +110,10 @@ as input and result in a function as an output.
 
 The syntax of the base allows to mimic the basic operators of RFPL (`Cn`, `Pr`,
 and `Mn`).
+</details>
 
-### Function Type Check
+<details>
+<summary><h3>Function Type Check</h3><summary>
 
 With the introduction of bases, RFPL implements a basic type check to avoid
 errors before the evaluation.
@@ -120,8 +125,10 @@ errors before the evaluation.
        bar = foo[!2]
              ^~~~~~~
 ```
+</details>
 
-### Lazy Evaluation
+<details>
+<summary><h3>Lazy Evaluation</h3><summary>
 
 RFPL is strict, although it allows some expressions to be evaluated lazily;
 perhaps to improve performance or avoid unnecessary computation.
@@ -134,6 +141,7 @@ perhaps to improve performance or avoid unnecessary computation.
 >> mul(0, ~mul(1000, 1000))  ; instant
  = 0
 ```
+</details>
 
 ## Development and Contribution
 ### Translating "The RFPL Journey"
