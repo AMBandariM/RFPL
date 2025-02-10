@@ -47,8 +47,9 @@ To enable syntax highlighting for RFPL files in VSCode:
 
 ## Showcase
 
-`journey` provides an introduction to recursive functions and the the syntax of
-RFPL. Apart from the definitions of μ-recursive functions, the features of RFPL
+Syntax of RFPL follows the notation used in Computability and Logic by George S. Boolos, John P. Burgess, and Richard C. Jeffrey.
+`journey` provides an introduction to recursive functions. 
+Apart from the definitions of μ-recursive functions, the features of RFPL
 described here make it distinct from similar implementations, potentially making
 it an interesting esolang in its own.
 
