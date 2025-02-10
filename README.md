@@ -52,7 +52,8 @@ RFPL. Apart from the definitions of μ-recursive functions, the features of RFPL
 described here make it distinct from similar implementations, potentially making
 it an interesting esolang in its own.
 
-### Every Value Is a Natural Number
+<details>
+<summary><h3>Every Value Is a Natural Number</h3></summary>
 
 Assuming $0\in\mathbb{N}$, every value is of type $\mathbb{N}$.
 
@@ -62,6 +63,7 @@ Assuming $0\in\mathbb{N}$, every value is of type $\mathbb{N}$.
 >> _  ; undefined number representing a never-halting computation.
  = Undefined
 ```
+</details>
 
 ### Native Gödel's Encoding
 
