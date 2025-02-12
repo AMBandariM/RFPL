@@ -1,0 +1,27 @@
+while = Pr[@0,Cn[@1,!0,!2]]
+
+add = while[!0,S]
+
+mul = while[#0,add]
+
+pow = while[#1,mul]
+
+sb1 = Pr[#0,!1]
+
+sub = while[!0,sb1]
+
+sign = Pr[#0,#1]
+
+if = Cn[Pr[#0,!2],@0,@1]
+
+odd = Pr[#0,Cn[sub,!0,#1]]
+
+ifelse = Cn[Pr[!1,!2],@0,@1,@2]
+
+half = Pr[#0,Cn[add,!0,Cn[odd,!1]]]
+
+ltz = ifelse[odd,Cn[S,Cn[mul,#3,!0]],half]
+
+not = Cn[sub,!0,#1]
+
+sqrt = Mn[Cn[sub,Cn[mul,!0,!0],!1]]
