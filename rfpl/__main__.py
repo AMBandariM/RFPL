@@ -9,7 +9,7 @@ from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.styles import Style
 from importlib.metadata import version
 
-from . import interpreter
+from . import settings
 from .RFPLLexer import RFPLLexer
 from .interpreter import Interpreter, MessageType
 
@@ -115,10 +115,12 @@ def mainloop():
             continue
         hist += line.strip() + '\n\n'
         ok, messages = intr.report(line)
+        any_print = False
         for msg in messages:
+            printed = True
             if msg.typ == MessageType.NATURAL:
                 print(ANSI(f' {C_GREEN}= {msg.natural}{C_RESET}'))
-            elif msg.typ == MessageType.INFO:
+            elif msg.typ == MessageType.INFO and settings.VERBOSE >= 1:
                 print(ANSI(f' {C_ORANGE}. {msg.message}{C_RESET}'))
             elif msg.typ == MessageType.ERROR:
                 print(ANSI(f' {C_RED}! ERROR: {msg.message}{C_RESET}'))
@@ -127,7 +129,11 @@ def mainloop():
                         print(ANSI(C_RED + ' '*7 + ctx + C_RESET))
             elif msg.typ == MessageType.EXCEPTION:
                 print(ANSI(f' {C_RED}* EXCEPTION: {msg.message}{C_RESET}'))
-        print()
+            else:
+                printed = False
+            any_print = any_print or printed
+        if any_print:
+            print()
 
 
 def get_version():
@@ -149,8 +155,13 @@ def main():
         default=0,
         action='count',
     )
+    parser.add_argument(
+        '-b', '--brief',
+        default=0,
+        action='count'
+    )
     args = parser.parse_args()
-    interpreter.DEBUG = (args.verbose > 0)
+    settings.VERBOSE += args.verbose - args.brief
     intr = Interpreter()
     try:
         mainloop()

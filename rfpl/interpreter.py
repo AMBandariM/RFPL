@@ -17,13 +17,13 @@ from .RFPLLexer import RFPLLexer
 from .RFPLParser import RFPLParser
 from .rfpy import RFPYModule
 from .symbol import BaseList, FunctionType, SymbolEntry
+from . import settings
 
-DEBUG = False
 LIB_PATH = Path(__file__).parent / 'lib'
 
 
 def debug(*args):
-    if not DEBUG:
+    if settings.VERBOSE <= 1:
         return
     print(*args, file=sys.stderr)
 
@@ -74,8 +74,6 @@ class SymbolTable:
 
 
 class HashCache:
-    CACHE = False
-
     def __init__(self, basic_functions):
         self.basic_functions = basic_functions
         self.cache = {}
@@ -99,7 +97,7 @@ class HashCache:
         return NaturalList([Natural(a), Natural(b), Natural(c), Natural(None), Natural(None)])
 
     def call_and_cache(self, fun: SymbolEntry, blist: BaseList, args: list[Natural]):
-        if (blist is not None and len(blist.args)) or fun.builtin or not self.CACHE:
+        if (blist is not None and len(blist.args)) or fun.builtin or not settings.CACHE:
             return fun.call(blist, args)
         if fun.ix not in self.possibleMatches:
             self.possibleMatches[fun.ix] = self.basic_functions.copy()
