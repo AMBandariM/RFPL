@@ -115,7 +115,6 @@ def mainloop():
             continue
         hist += line.strip() + '\n\n'
         ok, messages = intr.report(line)
-        any_print = False
         for msg in messages:
             printed = True
             if msg.typ == MessageType.NATURAL:
@@ -129,10 +128,7 @@ def mainloop():
                         print(ANSI(C_RED + ' '*7 + ctx + C_RESET))
             elif msg.typ == MessageType.EXCEPTION:
                 print(ANSI(f' {C_RED}* EXCEPTION: {msg.message}{C_RESET}'))
-            else:
-                printed = False
-            any_print = any_print or printed
-        if any_print:
+        if settings.VERBOSE >= 1:
             print()
 
 
