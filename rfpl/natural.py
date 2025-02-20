@@ -188,8 +188,10 @@ class Natural:
         return int(self) == int(other)
     
     def __repr__(self):
+        if callable(self.__natural):
+            return 'N(?)'
         if not self.is_defined():
-            return 'Undefined'
+            return 'N(_)'
         if isinstance(self.__natural, int):
             return 'N({})'.format(self.__natural)
         subreps = []
@@ -239,3 +241,6 @@ class NaturalList:
         if len(self.content) < nitem:
             return NaturalList([])
         return NaturalList(self.content.copy()[nitem:])
+    
+    def __str__(self):
+        return '[' + ','.join(nat.__repr__() for nat in self.content) + ']'

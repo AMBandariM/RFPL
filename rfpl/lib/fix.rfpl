@@ -1,0 +1,7 @@
+load logic
+
+pred = Cn[Sub, #1, !0]
+fact = Fix{ if[!0, Cn[Mul, !0, Cn[@0, Cn[pred, !0]]], #1] }
+fib = Fix{ if[Cn[leq, !0, #1], !0, Cn[Add, Cn[@0, Cn[Sub, #1, !0]], Cn[@0, Cn[Sub, #2, !0]]]] }
+
+prz = Fix{ if[Cn[IsZero, !0], @1, Cn[Cn[@2, Cn[@0, !0], !0, !1..], Cn[pred, !0], !1..]] }[@0, @1]

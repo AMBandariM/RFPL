@@ -273,6 +273,18 @@ class Interpreter:
             if not result.is_defined():
                 return Natural(None)
             return args[0]
+        elif isinstance(tree, RFPLParser.BuiltinFixContext):
+            g = tree.fexpr()
+            hs = []
+            if tree.fexprlist() is not None:
+                hs = tree.fexprlist().getTypedRuleContexts(RFPLParser.FexprContext)
+            bnxt = BaseList([], None)
+            bnxt.args = [root] + hs
+            for h in hs:
+                if h.c_ftype.nbase > 0:
+                    bnxt.prev = blist
+                    break
+            return self.interpret_fexpr(g, bnxt, args)
         else:
             raise Exception(f'Unknown tree type {type(tree)}')
 
@@ -430,6 +442,31 @@ class Interpreter:
                 dict_max_eq(ftype.relative_narg_b, fj, htype.relative_narg_b[fj] - 1)
             for fj in htype.max_narg_b:
                 dict_min_eq(ftype.max_narg_b, fj, htype.max_narg_b[fj])
+
+        elif isinstance(tree, RFPLParser.BuiltinFixContext):
+            # assume f = Fix{ g }[h1, h2, ...]
+            g = tree.fexpr()
+            gtype = self.preprocess(g)
+            hs = []
+            if tree.fexprlist() is not None:
+                hs = tree.fexprlist().getTypedRuleContexts(RFPLParser.FexprContext)
+            if gtype.nbase == 0:
+                self.add_message(Message.error_context(
+                    'Fixed function should refer to itself by @0',
+                    tree
+                ))
+                return ftype
+            if gtype.nbase - 1 != len(hs):
+                self.add_message(Message.error_context(
+                    f'Fixed function uses {gtype.nbase - 1} extra bases, but got {len(hs)}',
+                    tree
+                ))
+                return ftype
+            ftype.narg = gtype.narg
+            for h in hs:
+                htype = self.preprocess(h)
+                ftype.nbase = max(ftype.nbase, htype.nbase)
+                # TODO: extra conditions similar to calling functions
     
         else:
             raise Exception(f'Unknown node {type(tree)}')

@@ -15,6 +15,7 @@ fexpr         : fexprleaf
               | builtinCn
               | builtinPr
               | builtinMn
+              | builtinFix
               | identity
               | constant
               | bracket ;
@@ -25,6 +26,7 @@ builtinCn     : Lazy? 'Cn' '[' fexprlist identityRest ']' ;
 identityRest  : ',' '!' Number '..' | ;
 builtinPr     : Lazy? 'Pr' '[' fexpr ',' fexpr ']' ;
 builtinMn     : Lazy? 'Mn' '[' fexpr ']' ;
+builtinFix    : Lazy? 'Fix' '{' fexpr '}' ('[' fexprlist ']')? ;
 identity      : '!' Number ;
 constant      : '#' natural ;
 bracket       : Lazy? '@' Number ;
