@@ -116,7 +116,6 @@ def mainloop():
         hist += line.strip() + '\n\n'
         ok, messages = intr.report(line)
         for msg in messages:
-            printed = True
             if msg.typ == MessageType.NATURAL:
                 print(ANSI(f' {C_GREEN}= {msg.natural}{C_RESET}'))
             elif msg.typ == MessageType.INFO and settings.VERBOSE >= 1:
