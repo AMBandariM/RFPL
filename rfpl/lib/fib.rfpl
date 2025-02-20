@@ -1,0 +1,31 @@
+; try to run this shit LOL
+
+add = Pr[!0,Cn[S,!0]]
+
+mul = Pr[#0,Cn[add,!0,!2]]
+
+pow = Pr[#1,Cn[mul,!0,!2]]
+
+sub1 = Pr[#0,!1]
+
+sub = Pr[!0,Cn[sub1,!0]]
+
+if = Pr[#0,!2]
+
+pack = Cn[mul,Cn[pow,!0,#2],Cn[pow,!1,#3]]
+
+mod = Pr[#0,Cn[sub,Cn[if,Cn[sub,!2,Cn[add,!0,#2]],!2],Cn[S,!0]]]
+
+divz = Cn[sub,mod,#1]
+
+v2h = Pr[#0,Cn[add,!0,Cn[divz,!2,Cn[pow,!1,#2]]]]
+
+v2 = Cn[sub1,Cn[v2h,!0,!0]]
+
+v3h = Pr[#0,Cn[add,!0,Cn[divz,!2,Cn[pow,!1,#3]]]]
+
+v3 = Cn[sub1,Cn[v3h,!0,!0]]
+
+Fib = Pr[#<1,1>,Cn[pack,Cn[v3,!0],Cn[add,Cn[v2,!0],Cn[v3,!0]]]]
+
+fib = Cn[v2,Fib]

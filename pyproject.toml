@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rfpl"
+authors = [
+    {name = "AmirMohammad Bandari Masoole", email = "ambandarim@gmail.com"},
+    {name = "Parsa Alizadeh", email = "parsa.alizadeh1@gmail.com"}
+]
+description = "Recursive Functional Programming Language"
+readme = "README.md"
+dependencies = [
+    "prompt_toolkit>=3,<4",
+    "antlr4-python3-runtime>=4.13,<4.14"
+]
+dynamic = ["version"]
+requires-python = ">= 3.9"
+license = {text = "MIT"}
+classifiers = [
+    "Topic :: Software Development :: Interpreters",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Programming Language :: Python :: 3"
+]
+
+[project.urls]
+Homepage = "https://github.com/AMBandariM/RFPL"
+
+[tool.setuptools.package-dir]
+rfpl = "./rfpl"
+journey = "./journey"
+
+[project.scripts]
+rfpl = "rfpl.__main__:main"
+journey = "journey.__main__:main"
+
+[tool.setuptools_scm]
+version_scheme = "no-guess-dev"
+
+[tool.setuptools.cmdclass]
+build_py = "scripts.build.CustomBuild"

@@ -1,0 +1,13 @@
+*.interp
+*.interp 
+*Lexer.py 
+*Listener.py 
+*Parser.py
+*Visitor.py
+*.tokens
+test.*
+__pycache__
+venv
+*.egg-info
+dist
+build
