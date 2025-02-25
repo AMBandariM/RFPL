@@ -219,6 +219,7 @@ class Interpreter:
             self.has_error = True
 
     def interpret_fexpr(self, root, blist: BaseList, args: NaturalList, strict: bool = False) -> Natural:
+        debug('%', root.getText(), args)
         tree = root.getChild(0)
         if not strict and tree.getToken(RFPLParser.Lazy, 0) is not None:
             return Natural(lambda args=args.copy() : self.interpret_fexpr(root, blist, args, strict=True))
@@ -561,13 +562,20 @@ class Interpreter:
             lines = file.readlines()
             cmd = ''
             for line in lines:
-                cmd += line.strip() + ' '
+                # TODO: I changed ' ' to '\n', because it couldn't detect comments in the middle of
+                # an expression. Now error messages are hugely off. We could either change line
+                # comments to block comments (; to /* */) or somehow fix the error messages.
+                cmd += line.strip() + '\n'
                 if not self.parsable(cmd)[0]:
                     continue
                 cmdok, _ = self.report(cmd, clear=False)
                 if not cmdok:
                     ok = False
                 cmd = ''
+            cmdok, _ = self.report(cmd, clear=False)
+            if not cmdok:
+                ok = False
+            cmd = ''
         self.symbol_table.clear_temp_layer(myTempLayerKey)
         return ok
 
