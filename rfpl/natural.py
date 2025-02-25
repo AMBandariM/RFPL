@@ -243,4 +243,4 @@ class NaturalList:
         return NaturalList(self.content.copy()[nitem:])
     
     def __str__(self):
-        return '[' + ','.join(nat.__repr__() for nat in self.content) + ']'
+        return '[' + ', '.join(nat.__repr__() for nat in self.content) + ']'
