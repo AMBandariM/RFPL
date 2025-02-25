@@ -18,27 +18,39 @@ setent = Cn[Set, Cn[S, !0], !1, !2]
 append = Cn[setent, len, !1, Cn[Mul, !0, #<1>]]
 
 ; mapent[f](i, xs)
-mapent = Cn[setent, !0, Cn[@0, Cn[ent, !0, !1]], !1]
+mapent = Cn[setent, !0, Cn[@0, Cn[ent, !0, !1], !2..], !1]
 
 ; map[f](xs)
-map = Cn[Pr[!0, Cn[mapent[@0], !1, !0]], len, !0]
+map = Cn[Pr[!0, Cn[mapent[@0], !1, !0, !3..]], len, !0, !1..]
 
 ; concat(xs, ys)
 concat = Cn[Pr[!0, Cn[append, !0, Cn[ent, !1, !3]]], Cn[len, !1], !0, !1]
 
 ; filter[pred](xs)
-filter =
-    Cn[
-        Pr[empty,
-            Cn[
-                if[Cn[@0, !0],
-                    Cn[append, !1, !0],
-                    !1
-                ],
-                Cn[ent, !1, !2],
-                !0
-            ]
-        ],
-        len,
-        !0
-    ]
+filter = Cn[
+    Pr[empty,
+        Cn[
+            if[Cn[@0, !0],
+                Cn[append, !1, !0],
+                !1
+            ],
+            Cn[ent, !1, !2],
+            !0
+        ]
+    ],
+    len,
+    !0
+]
+
+; prepend(x, xs)
+prepend = Cn[
+    Pr[
+        Cn[append, empty, !0],
+        ; !0 = prev result, !1 = index, !2 = x, !3 = xs
+        Cn[append, !0, Cn[ent, !1, !3]]
+    ],
+    Cn[len, !1], !0, !1
+]
+
+; tail(xs)
+tail = Cn[Pr[empty, Cn[append, !0, Cn[ent, Cn[S, !1], !2]]], Cn[Sub, #1, len], !0]

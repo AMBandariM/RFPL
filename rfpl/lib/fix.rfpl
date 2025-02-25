@@ -5,3 +5,64 @@ fact = Fix{ if[!0, Cn[Mul, !0, Cn[@0, Cn[pred, !0]]], #1] }
 fib = Fix{ if[Cn[leq, !0, #1], !0, Cn[Add, Cn[@0, Cn[Sub, #1, !0]], Cn[@0, Cn[Sub, #2, !0]]]] }
 
 prz = Fix{ if[Cn[IsZero, !0], @1, Cn[Cn[@2, Cn[@0, !0], !0, !1..], Cn[pred, !0], !1..]] }[@0, @1]
+
+
+; ---- RFPL self-interpreter ----
+; eval(source, argument) -> result
+
+load stack
+
+_g = Cn[Get, @0, !0]
+
+; #n = <0, n>
+_caseconst = _g[#1]
+
+; !n = <1, n>
+_caseid = Cn[ent, _g[#1], !1]
+
+; S = <2>
+_cases = Cn[S, Cn[ent, #0, !1]]
+
+; Cn[f, g1, ..., gk] = <3, f, <k, g1, ..., gk>>
+_casecn = Cn[@0, _g[#1], Cn[map[@0], _g[#2], !1]]
+
+; Pr[f, g] = <4, f, g>
+_casepr = Cn[
+    Pr[
+        Cn[@0, Cn[_g[#1], !0], !1],
+        ; !0 = prev result, !1 = index, !2 = program, !3 = arguments
+        Cn[@0, Cn[_g[#2], !2],
+            Cn[prepend, !0, Cn[prepend, !1, !3]]]
+    ], 
+    Cn[ent, #0, !1],
+    !0,
+    Cn[tail, !1]
+]
+
+; Mn[f] = <5, f>
+_casemn = Mn[
+    ; !0 = index, !1 = program, !2 = arguments
+    Cn[@0, Cn[_g[#1], !1], Cn[prepend, !0, !2]]
+]
+
+_switch = Cn[
+    if[Cn[Equal, !2, #0], _caseconst
+    , if[Cn[Equal, !2, #1], _caseid
+    , if[Cn[Equal, !2, #2], _cases
+    , if[Cn[Equal, !2, #3], _casecn[@0]
+    , if[Cn[Equal, !2, #4], _casepr[@0]
+    , _casemn[@0]
+    ]]]]]
+    , !0, !1, _g[#0]
+]
+
+eval = Fix{ _switch[@0] }
+
+; add = Pr[!0, Cn[S, !0]]
+n_add = #<4, <1, 0>, <3, <2>, <1, <1, 0>>>>
+
+; mul = Pr[#0, Cn[add, !2, !0]]
+n_mul = #<4, <0, 0>, <3,
+    <4, <1, 0>, <3, <2>, <1, <1, 0>>>>,
+    <2, <1, 2>, <1, 0>>
+>>
