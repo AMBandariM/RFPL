@@ -38,6 +38,10 @@ class Natural:
     
     def is_defined(self):
         self.normalize()
+        # TODO: this makes rfpl really slow to work with large arrays. maybe we need to change
+        #   is_defined (like weak-defined vs strong-defined).
+        if isinstance(self.__natural, list):
+            return all(nat.is_defined() for nat in self.__natural)
         return self.__natural is not None
 
     def is_zero(self):
@@ -61,7 +65,8 @@ class Natural:
         return num
     
     def simplify(self):
-        self.__natural = int(self)
+        if self.is_defined():
+            self.__natural = int(self)
 
     def factor(self):
         if isinstance(self.__natural, list):
