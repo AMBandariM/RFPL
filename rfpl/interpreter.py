@@ -292,8 +292,16 @@ class Interpreter:
     def interpret_nexpr(self, tree):
         if not isinstance(tree, RFPLParser.NexprContext):
             raise Exception('Tree must represent a nexpr, got {}'.format(type(tree)))
-        if tree.natural() is not None:
-            return Natural.interpret(tree.natural())
+        if tree.Number() is not None:
+            return Natural(int(tree.Number().getText()))
+        if tree.fexpr() is None and tree.nexprlist() is not None:
+            naturallist = tree.nexprlist()
+            nats = []
+            for subtr in naturallist.getTypedRuleContexts(RFPLParser.NexprContext):
+                nats.append(self.interpret_nexpr(subtr))
+            return Natural(nats)
+        if tree.fexpr() is None:
+            return Natural(None)
         fexpr: RFPLParser.FexprContext = tree.fexpr()
         nexprlist: RFPLParser.NexprlistContext = tree.nexprlist()
         args = []
@@ -373,7 +381,7 @@ class Interpreter:
             ftype.narg = ix + 1
 
         elif isinstance(tree, RFPLParser.ConstantContext):
-            tree.c_natural = Natural.interpret(tree.natural())
+            tree.c_natural = self.interpret_nexpr(tree.nexpr())
 
         elif isinstance(tree, RFPLParser.BuiltinCnContext):
             # assume f = Cn[h, g0, g1, ...]

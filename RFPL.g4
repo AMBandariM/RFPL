@@ -28,17 +28,14 @@ builtinPr     : Lazy? 'Pr' '[' fexpr ',' fexpr ']' ;
 builtinMn     : Lazy? 'Mn' '[' fexpr ']' ;
 builtinFix    : Lazy? 'Fix' '{' fexpr '}' ('[' fexprlist ']')? ;
 identity      : '!' Number ;
-constant      : '#' natural ;
+constant      : '#' nexpr ;
 bracket       : Lazy? '@' Number ;
 nexpr         : fexpr '(' nexprlist ')' 
-              | natural ;
+              | Number
+              | '<' nexprlist '>'
+              | '_' ; /* similar to bottom symbol */
 nexprlist     : /* epsilon */ 
               | nexpr (',' nexpr)* ;
-natural       : Number 
-              | '<' naturallist '>'
-              | '_' ;   /* similar to bottom symbol */
-naturallist   : /* epsilon */ 
-              | natural (',' natural)* ;
 
 // Lexer rules (start with uppercase)
 Lazy          : '~' ;
